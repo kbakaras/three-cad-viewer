@@ -952,7 +952,9 @@ class Viewer {
         this.rendered.camera.getCamera(),
       );
     }
-    this.renderPivotMarker();
+    if (!this._studioManager.hasComposer) {
+      this.renderPivotMarker();
+    }
     this.cadTools.update();
 
     this.rendered.directLight.position.copy(
