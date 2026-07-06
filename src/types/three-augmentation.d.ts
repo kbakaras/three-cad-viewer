@@ -30,6 +30,14 @@ declare module "three/examples/jsm/controls/OrbitControls.js" {
      * When true, panning is in screen space (XY) rather than camera plane
      */
     screenSpacePanning: boolean;
+    /**
+     * Internal: initialize dolly interaction.
+     */
+    _handleMouseDownDolly(event: MouseEvent): void;
+    /**
+     * Internal: update dolly interaction.
+     */
+    _handleMouseMoveDolly(event: MouseEvent): void;
   }
 }
 
@@ -47,6 +55,10 @@ declare module "three/examples/jsm/controls/TrackballControls.js" {
      * Internal: pan camera based on mouse movement
      */
     _panCamera(): void;
+    /**
+     * Internal: zoom camera based on mouse movement
+     */
+    _zoomCamera(): void;
   }
 }
 

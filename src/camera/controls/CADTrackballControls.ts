@@ -39,6 +39,7 @@ const STATE = {
   ROTATE: 0,
   ZOOM: 1,
   PAN: 2,
+  TARGET_DOLLY: 3,
 };
 
 // Used for change detection in holroyd mode
@@ -55,6 +56,7 @@ const _rotateEnd3 = new Vector3();
 const _panDirection = new Vector3();
 const _cameraUp = new Vector3();
 const _cameraRight = new Vector3();
+const _targetDollyDirection = new Vector3();
 
 class CADTrackballControls extends TrackballControls {
   holroyd: boolean;
@@ -65,6 +67,8 @@ class CADTrackballControls extends TrackballControls {
   private _holroydActive: boolean;
   private _horizontalRotate: boolean;
   private _verticalRotate: boolean;
+  private _targetDollyActive: boolean;
+  private _targetDollyStartY: number;
   private _holroydPointerDown?: (event: PointerEvent) => void;
   private _holroydPointerMove?: (event: PointerEvent) => void;
   private _holroydPointerUp?: () => void;
@@ -92,7 +96,6 @@ class CADTrackballControls extends TrackballControls {
   declare _onMouseDown: (event: MouseEvent) => void;
   declare _getMouseOnCircle: (pageX: number, pageY: number) => Vector2;
   declare _getMouseOnScreen: (pageX: number, pageY: number) => Vector2;
-  declare _zoomCamera: () => void;
 
   /**
    * Constructs CAD-enhanced trackball controls.
@@ -129,6 +132,8 @@ class CADTrackballControls extends TrackballControls {
     // When false, that axis is locked (coordinate set to 0 in sphere projection)
     this._horizontalRotate = true; // meta key restricts to horizontal only
     this._verticalRotate = true; // ctrl key restricts to vertical only
+    this._targetDollyActive = false;
+    this._targetDollyStartY = 0;
 
     // Add our own pointer event listeners to capture raw coordinates
     // This runs alongside the parent's handlers
@@ -185,6 +190,14 @@ class CADTrackballControls extends TrackballControls {
 
     switch (mouseAction) {
       case MOUSE.DOLLY:
+        this._targetDollyActive = this._isPlainMiddleButton(event);
+        if (this._targetDollyActive) {
+          this._targetDollyStartY = event.clientY;
+          this.state = STATE.TARGET_DOLLY;
+          event.preventDefault();
+          this.dispatchEvent({ type: "start" });
+          return;
+        }
         this.state = STATE.ZOOM;
         break;
       case MOUSE.ROTATE:
@@ -221,6 +234,13 @@ class CADTrackballControls extends TrackballControls {
   private _onHolroydPointerDown(event: PointerEvent): void {
     if (!this.holroyd) return;
 
+    if (this._isPlainMiddleButton(event)) {
+      this._targetDollyActive = true;
+      this._targetDollyStartY = event.clientY;
+      event.preventDefault();
+      return;
+    }
+
     // Only activate holroyd for rotation (left mouse button or touch)
     // Right mouse (button 2) is for pan, middle (button 1) for zoom
     // For touch, button is 0
@@ -247,6 +267,14 @@ class CADTrackballControls extends TrackballControls {
    * Works for all pointer types (mouse, touch, pen, trackpad).
    */
   private _onHolroydPointerMove(event: PointerEvent): void {
+    if (this.holroyd && this._targetDollyActive) {
+      this._dollyTargetByPixels(event.clientY - this._targetDollyStartY);
+      this._targetDollyStartY = event.clientY;
+      event.preventDefault();
+      this.dispatchEvent({ type: "change" });
+      return;
+    }
+
     if (this.holroyd && this._holroydActive) {
       this._holroydEnd.set(event.pageX, event.pageY);
     }
@@ -263,9 +291,41 @@ class CADTrackballControls extends TrackballControls {
    * Reset holroyd active state and rotation restrictions on pointer up.
    */
   private _onHolroydPointerUp(): void {
+    this._targetDollyActive = false;
+    this._targetDollyStartY = 0;
+    this._zoomStart.copy(this._zoomEnd);
     this._holroydActive = false;
     this._horizontalRotate = true;
     this._verticalRotate = true;
+    this.state = STATE.NONE;
+  }
+
+  private _isPlainMiddleButton(event: MouseEvent | PointerEvent): boolean {
+    return (
+      event.button === 1 &&
+      !KeyMapper.get(event, "ctrl") &&
+      !KeyMapper.get(event, "meta") &&
+      !KeyMapper.get(event, "shift")
+    );
+  }
+
+  /**
+   * Move camera and target together along the current view ray.
+   */
+  private _dollyTargetByPixels(deltaY: number): void {
+    if (deltaY === 0) return;
+
+    const height = Math.max(1, this.domElement?.clientHeight ?? 1);
+    const distanceDelta =
+      (deltaY / height) * this._eye.length() * this.zoomSpeed * 2;
+
+    _targetDollyDirection
+      .subVectors(this.target, this.object.position)
+      .normalize()
+      .multiplyScalar(distanceDelta);
+
+    this.target.add(_targetDollyDirection);
+    this.object.position.add(_targetDollyDirection);
   }
 
   /**

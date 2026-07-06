@@ -31,7 +31,10 @@ import {
   scaleLight,
   deepDispose,
   isOrthographicCamera,
+  isLine,
   isLineSegments2,
+  isMesh,
+  isPoints,
   toVector3Tuple,
   toQuaternionTuple,
 } from "../utils/utils.js";
@@ -318,6 +321,10 @@ class Viewer {
 
   // Render-time state: created in render(), cleared in clear()
   private _rendered: RenderedState | null;
+  private _pivotMarkerDepth: THREE.LineSegments | null;
+  private _pivotMarkerGhost: THREE.LineSegments | null;
+  private _pivotMarkerScene: THREE.Scene | null;
+  private _pivotMarkerDepthMaterial: THREE.MeshDepthMaterial;
 
   /**
    * Get rendered state, throwing if not yet rendered.
@@ -456,6 +463,14 @@ class Viewer {
 
     // Render-time state starts as null
     this._rendered = null;
+    this._pivotMarkerDepth = null;
+    this._pivotMarkerGhost = null;
+    this._pivotMarkerScene = null;
+    this._pivotMarkerDepthMaterial = new THREE.MeshDepthMaterial({
+      colorWrite: false,
+      depthTest: true,
+      depthWrite: true,
+    });
 
     this.tree = null;
     this.bbox = null;
@@ -937,6 +952,7 @@ class Viewer {
         this.rendered.camera.getCamera(),
       );
     }
+    this.renderPivotMarker();
     this.cadTools.update();
 
     this.rendered.directLight.position.copy(
@@ -1160,6 +1176,9 @@ class Viewer {
       deepDispose(this.info);
 
       this._rendered = null;
+      this._pivotMarkerDepth = null;
+      this._pivotMarkerGhost = null;
+      this._pivotMarkerScene = null;
       this.ready = false;
     }
 
@@ -1190,6 +1209,119 @@ class Viewer {
     this.tree = null;
     this.compactTree = null;
     this.expandedTree = null;
+  }
+
+  private ensurePivotMarker(): void {
+    if (!this._rendered) return;
+
+    if (
+      this._pivotMarkerDepth &&
+      this._pivotMarkerDepth.parent === this._pivotMarkerScene &&
+      this._pivotMarkerGhost &&
+      this._pivotMarkerGhost.parent === this._pivotMarkerScene
+    ) {
+      return;
+    }
+
+    this._pivotMarkerDepth = null;
+    this._pivotMarkerGhost = null;
+    this._pivotMarkerScene = new THREE.Scene();
+
+    const geometry = new THREE.BufferGeometry();
+    geometry.setAttribute(
+      "position",
+      new THREE.Float32BufferAttribute(
+        [-1, 0, 0, 1, 0, 0, 0, -1, 0, 0, 1, 0, 0, 0, -1, 0, 0, 1],
+        3,
+      ),
+    );
+
+    const depthMaterial = new THREE.LineBasicMaterial({
+      color: 0xff3030,
+      depthTest: true,
+      depthWrite: false,
+      transparent: true,
+      opacity: 0.95,
+    });
+    const ghostMaterial = new THREE.LineBasicMaterial({
+      color: 0xff3030,
+      depthTest: false,
+      depthWrite: false,
+      transparent: true,
+      opacity: 0.16,
+    });
+
+    this._pivotMarkerDepth = new THREE.LineSegments(geometry, depthMaterial);
+    this._pivotMarkerDepth.name = "__ocp_viewer_pivot_marker_depth";
+    this._pivotMarkerDepth.renderOrder = 100000;
+    this._pivotMarkerDepth.frustumCulled = false;
+
+    this._pivotMarkerGhost = new THREE.LineSegments(geometry, ghostMaterial);
+    this._pivotMarkerGhost.name = "__ocp_viewer_pivot_marker_ghost";
+    this._pivotMarkerGhost.renderOrder = 100001;
+    this._pivotMarkerGhost.frustumCulled = false;
+
+    this._pivotMarkerScene.add(this._pivotMarkerDepth);
+    this._pivotMarkerScene.add(this._pivotMarkerGhost);
+  }
+
+  private updatePivotMarker(): void {
+    if (!this._rendered) return;
+    this.ensurePivotMarker();
+    if (!this._pivotMarkerDepth || !this._pivotMarkerGhost) return;
+
+    const target = this._rendered.controls.getTarget();
+    const cameraPosition = this._rendered.camera.getPosition();
+    const markerSize = Math.max(2, cameraPosition.distanceTo(target) * 0.035);
+
+    for (const marker of [this._pivotMarkerDepth, this._pivotMarkerGhost]) {
+      marker.position.copy(target);
+      marker.scale.setScalar(markerSize);
+      marker.visible = true;
+    }
+  }
+
+  private renderPivotMarker(): void {
+    if (!this._rendered) return;
+
+    this.updatePivotMarker();
+    if (!this._pivotMarkerScene) return;
+
+    const scene = this._rendered.scene;
+    const camera = this._rendered.camera.getCamera();
+    const oldOverrideMaterial = scene.overrideMaterial;
+    const oldAutoClear = this.renderer.autoClear;
+    const hidden: THREE.Object3D[] = [];
+
+    scene.traverse((obj) => {
+      if ((isLine(obj) || isPoints(obj)) && obj.visible) {
+        hidden.push(obj);
+        obj.visible = false;
+      } else if (isMesh(obj) && obj.visible) {
+        const material = obj.material;
+        const visible = Array.isArray(material)
+          ? material.some((mat) => mat.visible)
+          : material.visible;
+        if (!visible) {
+          hidden.push(obj);
+          obj.visible = false;
+        }
+      }
+    });
+
+    this.renderer.autoClear = false;
+    scene.overrideMaterial = this._pivotMarkerDepthMaterial;
+    try {
+      this.renderer.clearDepth();
+      this.renderer.render(scene, camera);
+      this.renderer.render(this._pivotMarkerScene, camera);
+    } finally {
+      scene.overrideMaterial = oldOverrideMaterial;
+      for (const obj of hidden) {
+        obj.visible = true;
+      }
+      this.renderer.autoClear = oldAutoClear;
+    }
   }
 
   // ---------------------------------------------------------------------------
