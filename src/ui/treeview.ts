@@ -276,7 +276,7 @@ class TreeView {
     const isMouse = e instanceof MouseEvent;
     this.pickHandler(
       this.getNodePath(this.getParent(node)),
-      node.name,
+      node.path.split("/").pop()!,
       isMouse ? KeyMapper.get(e, "meta") : false,
       isMouse ? KeyMapper.get(e, "shift") : false,
       isMouse ? KeyMapper.get(e, "alt") : false,
@@ -446,7 +446,7 @@ class TreeView {
 
     const label = document.createElement("span");
     label.className = "tv-node-label";
-    label.innerHTML = node.name;
+    label.textContent = node.name;
     const color = this.colorGetter(node.path);
     if (color != null) {
       label.innerHTML += `<span style="color:${color}"> ⚈</span>`;

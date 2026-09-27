@@ -122,15 +122,15 @@ class ShapeRenderer {
       const result: ShapeTreeData = {};
       for (const part of parts) {
         if (part.parts != null) {
-          result[part.name] = _getTree(part.parts);
+          result[part.id.split("/").pop()!] = _getTree(part.parts);
         } else {
-          result[part.name] = part.state as VisibilityState;
+          result[part.id.split("/").pop()!] = part.state as VisibilityState;
         }
       }
       return result;
     };
     const tree: ShapeTreeData = {};
-    tree[shapes.name] = _getTree(shapes.parts ?? []);
+    tree[shapes.id.split("/").pop()!] = _getTree(shapes.parts ?? []);
     return tree;
   }
 

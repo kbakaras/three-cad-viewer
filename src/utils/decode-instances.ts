@@ -231,5 +231,10 @@ function decodeInstancedFormat(data: InstancedData): Shapes {
   return shapes;
 }
 
-export { isInstancedFormat, decodeInstancedFormat, decodeInlineBuffers };
+export {
+  isInstancedFormat,
+  decodeInstancedFormat,
+  decodeInlineBuffers,
+  decodeInstance,
+};
 export type { InstancedData, EncodedBuffer, EncodedInstance };

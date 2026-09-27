@@ -23,6 +23,7 @@ import { Timer } from "./utils/timer.js";
 import { logger } from "./utils/logger.js";
 import { gpuTracker } from "./utils/gpu-tracker.js";
 import { version } from "./_version.js";
+export { SceneStream } from "./core/scene-stream.js";
 
 export {
   Viewer,

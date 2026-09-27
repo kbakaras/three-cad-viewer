@@ -1601,6 +1601,7 @@ class Viewer {
 
     this.display.clearCadTree();
     const t = treeview.create();
+    this._setTreeLabels(treeview);
     timer.split("created tree");
 
     this.display.addCadTree(t);
@@ -1688,6 +1689,7 @@ class Viewer {
 
     this.display.clearCadTree();
     const t = treeview.create();
+    this._setTreeLabels(treeview);
     timer.split("created tree");
 
     this.display.addCadTree(t);
@@ -3829,16 +3831,25 @@ class Viewer {
       const result: ShapeTreeData = {};
       for (const part of parts) {
         if (part.parts != null) {
-          result[part.name] = build(part.parts);
+          result[part.id.split("/").pop()!] = build(part.parts);
         } else {
-          result[part.name] = part.state as VisibilityState;
+          result[part.id.split("/").pop()!] = part.state as VisibilityState;
         }
       }
       return result;
     };
     const tree: ShapeTreeData = {};
-    tree[shapes.name] = build(shapes.parts ?? []);
+    tree[shapes.id.split("/").pop()!] = build(shapes.parts ?? []);
     return tree;
+  }
+
+  private _setTreeLabels(treeview: TreeView): void {
+    const walk = (shape: Shapes): void => {
+      const node = treeview.findNodeByPath(shape.id);
+      if (node) node.name = shape.name;
+      shape.parts?.forEach(walk);
+    };
+    if (this.shapes) walk(this.shapes);
   }
 
   /**
@@ -3855,11 +3866,13 @@ class Viewer {
 
     let current: Shapes = this.shapes;
     // The first segment should match the root
-    if (current.name !== parentParts[0]) return null;
+    if (current.id !== "/" + parentParts[0]) return null;
 
     for (let i = 1; i < parentParts.length; i++) {
       if (!current.parts) return null;
-      const child = current.parts.find((p) => p.name === parentParts[i]);
+      const child = current.parts.find(
+        (p) => p.id === current.id + "/" + parentParts[i],
+      );
       if (!child) return null;
       current = child;
     }
@@ -3897,6 +3910,7 @@ class Viewer {
 
     this.display.clearCadTree();
     const t = treeview.create();
+    this._setTreeLabels(treeview);
     this.display.addCadTree(t);
     treeview.render();
 
@@ -3979,9 +3993,12 @@ class Viewer {
     const isTree = partData.parts != null && Array.isArray(partData.parts);
 
     // Build the absolute root path
-    const path = isTree
-      ? parentPath + partData.id // "/group1/group2" + "/shelf" → "/group1/group2/shelf"
-      : parentPath + "/" + partData.name; // "/group1/group2" + "/" + "obj1"
+    const absoluteId = partData.id?.startsWith(parentPath + "/");
+    const path = absoluteId
+      ? partData.id
+      : isTree
+        ? parentPath + partData.id
+        : parentPath + "/" + partData.name;
 
     // Validate root doesn't already exist at this level
     if (nestedGroup.groups[path] != null) {
@@ -3989,7 +4006,7 @@ class Viewer {
     }
 
     // Rewrite ids to absolute paths
-    if (isTree) {
+    if (isTree && !absoluteId) {
       this._prefixIds(partData, parentPath);
     } else {
       partData.id = path;
@@ -4094,6 +4111,14 @@ class Viewer {
       throw new Error(`Part not found: ${path}`);
     }
 
+    if (
+      nestedGroup.selection().some((obj) => {
+        const id = obj.name.replaceAll("|", "/");
+        return id === path || id.startsWith(path + "/");
+      })
+    )
+      this.clearSelection();
+
     // Remove from Three.js scene graph
     if (group.parent) {
       group.parent.remove(group);
@@ -4110,8 +4135,7 @@ class Viewer {
     // Remove from this.shapes tree
     const parentShapes = this._findShapesParent(path);
     if (parentShapes && parentShapes.parts) {
-      const name = path.substring(path.lastIndexOf("/") + 1);
-      parentShapes.parts = parentShapes.parts.filter((p) => p.name !== name);
+      parentShapes.parts = parentShapes.parts.filter((p) => p.id !== path);
     }
 
     // Invalidate explode cache
@@ -4306,6 +4330,12 @@ class Viewer {
     (oldIndex!.array as Uint32Array).set(newTriangles);
     oldIndex!.needsUpdate = true;
 
+    if (shape.uvs) {
+      geom.setAttribute("uv", new THREE.BufferAttribute(toF32(shape.uvs), 2));
+    } else {
+      geom.deleteAttribute("uv");
+    }
+
     geom.computeBoundingBox();
     geom.computeBoundingSphere();
 
@@ -4338,13 +4368,9 @@ class Viewer {
     // Step 3: Sync this.shapes data
     const parentShapes = this._findShapesParent(path);
     if (parentShapes && parentShapes.parts) {
-      const name = path.substring(path.lastIndexOf("/") + 1);
-      const entry = parentShapes.parts.find((p) => p.name === name);
+      const entry = parentShapes.parts.find((p) => p.id === path);
       if (entry) {
-        entry.shape = shape;
-        if (partData.color !== undefined) entry.color = partData.color;
-        if (partData.alpha !== undefined) entry.alpha = partData.alpha;
-        if (partData.loc !== undefined) entry.loc = partData.loc;
+        this.updatePartProperties(path, { ...entry, ...partData, shape });
       }
     }
 
@@ -4446,6 +4472,141 @@ class Viewer {
       }
       this._pendingDisposal = [];
     }
+  }
+
+  /** Update placement and presentation without touching mesh buffers. */
+  updatePartProperties(path: string, data: Shapes): void {
+    const entry =
+      path === this.shapes?.id
+        ? this.shapes
+        : this._findShapesParent(path)?.parts?.find((p) => p.id === path);
+    const group = this.rendered.nestedGroup.groups[path];
+    if (!entry || !group) throw new Error(`Part not found: ${path}`);
+    const renamed = entry.name !== data.name;
+    if (data.loc != null) {
+      group.position.set(...data.loc[0]);
+      group.quaternion.set(...data.loc[1]);
+    } else {
+      group.position.set(0, 0, 0);
+      group.quaternion.set(0, 0, 0, 1);
+    }
+    if (isObjectGroup(group)) {
+      if (data.color !== undefined && !Array.isArray(data.color)) {
+        group.originalColor = new THREE.Color(data.color);
+        if (group.front && !group.isSelected) {
+          group.front.material.color.copy(group.originalColor);
+        }
+      }
+      if (data.alpha != null) {
+        group.alpha = data.alpha;
+        group.setTransparent(this.state.get("transparent"));
+      }
+      if (data.material != null) group.materialTag = data.material;
+    }
+    const parts = entry.parts;
+    Object.assign(entry, data);
+    if (parts) entry.parts = parts;
+    if (renamed) this._treeNeedsRebuild = true;
+  }
+
+  /** Apply a complete delta with one bounds/tree/render update. */
+  async applySceneDelta(delta: {
+    remove: string[];
+    add: Shapes[];
+    update: Shapes[];
+  }): Promise<void> {
+    if (!delta.remove.length && !delta.add.length && !delta.update.length)
+      return;
+    const expanded = this.rendered.nestedGroup !== this.compactNestedGroup;
+    if (expanded) this.toggleGroup(false);
+    const states = this.rendered.treeview.getStates();
+    const requestedStates: Record<string, VisibilityState> = {};
+    const rootUpdate = delta.update.find((node) => node.id === this.shapes?.id);
+    const materialsChanged =
+      rootUpdate &&
+      JSON.stringify(rootUpdate.materials) !==
+        JSON.stringify(this.shapes?.materials);
+    const parentStates: Record<string, VisibilityState> = {};
+    const saveGroups = (node: Shapes): void => {
+      if (!node.parts) return;
+      const state = this.getState(node.id);
+      if (state) parentStates[node.id] = [...state];
+      node.parts.forEach(saveGroups);
+    };
+    if (this.shapes) saveGroups(this.shapes);
+    for (const data of delta.add) {
+      if (data.parts) continue;
+      let parent = data.id.substring(0, data.id.lastIndexOf("/"));
+      while (parent && !parentStates[parent])
+        parent = parent.substring(0, parent.lastIndexOf("/"));
+      const state = parentStates[parent];
+      if (state?.includes(0)) {
+        const own = data.state ?? [1, 1];
+        requestedStates[data.id] = [
+          state[0] === 0 ? 0 : own[0],
+          state[1] === 0 ? 0 : own[1],
+        ];
+      }
+    }
+    const studio = this._studioManager.isActive;
+    if (studio) this.rendered.nestedGroup.leaveStudioMode();
+    for (const path of delta.remove)
+      this.removePart(path, { skipBounds: true });
+    for (const data of delta.add) {
+      this.addPart(data.id.substring(0, data.id.lastIndexOf("/")), data, {
+        skipBounds: true,
+      });
+    }
+    for (const data of delta.update) {
+      const entry =
+        data.id === this.shapes?.id
+          ? this.shapes
+          : this._findShapesParent(data.id)?.parts?.find(
+              (p) => p.id === data.id,
+            );
+      if (!entry) throw new Error(`Part not found: ${data.id}`);
+      if (
+        !entry.parts &&
+        data.state &&
+        JSON.stringify(entry.state) !== JSON.stringify(data.state)
+      ) {
+        requestedStates[data.id] = data.state;
+      }
+      // Replacing only changed leaves also refreshes UVs and all picking metadata.
+      // Shared instance buffers remain immutable; other occurrences are untouched.
+      if (
+        !entry.parts &&
+        (entry.shape !== data.shape ||
+          entry.material !== data.material ||
+          entry.texture !== data.texture)
+      ) {
+        this.removePart(data.id, { skipBounds: true });
+        this.addPart(data.id.substring(0, data.id.lastIndexOf("/")), data, {
+          skipBounds: true,
+        });
+      } else {
+        this.updatePartProperties(data.id, data);
+      }
+    }
+    if (materialsChanged) {
+      this.shapes!.materials = rootUpdate.materials;
+      const nested = this.rendered.nestedGroup;
+      nested.materialsTable = rootUpdate.materials || null;
+      nested.resolvedMaterials.clear();
+      nested.resolvedMaterialX.clear();
+      nested.clearStudioMaterialCache();
+    }
+    if (studio) {
+      await this.rendered.nestedGroup.enterStudioMode(
+        this.state.get("studioTextureMapping"),
+      );
+      this.rendered.nestedGroup.setStudioShowEdges(false);
+    }
+    this.updateBounds();
+    this.rendered.treeview.setStates(states);
+    for (const [id, state] of Object.entries(requestedStates))
+      this.setState(id, state);
+    if (expanded) this.toggleGroup(true);
   }
 
   /**
