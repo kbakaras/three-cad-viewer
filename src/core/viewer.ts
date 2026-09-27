@@ -51,6 +51,9 @@ import { PickedObject, Raycaster, TopoFilter } from "../rendering/raycast.js";
 import { StudioManager } from "./studio-manager.js";
 import { ViewerState } from "./viewer-state.js";
 import { logger } from "../utils/logger.js";
+import { gpuTracker } from "../utils/gpu-tracker.js";
+import { CadInstancing, instanceSources } from "../rendering/cad-instancing.js";
+import type { InstancingStats } from "../rendering/cad-instancing.js";
 import {
   isInstancedFormat,
   decodeInstancedFormat,
@@ -82,6 +85,14 @@ import {
 // =============================================================================
 // TYPE DEFINITIONS
 // =============================================================================
+
+export interface PerformanceStats {
+  frames: number;
+  cpuMs: number;
+  calls: number;
+  triangles: number;
+  lines: number;
+}
 
 /**
  * Material settings for the viewer.
@@ -298,6 +309,24 @@ interface RenderedState {
  * @public
  */
 class Viewer {
+  private readonly cadInstancing = new CadInstancing();
+  private gpuInstancing = true;
+  private performanceMonitoring = false;
+  private performanceStats: PerformanceStats = {
+    frames: 0,
+    cpuMs: 0,
+    calls: 0,
+    triangles: 0,
+    lines: 0,
+  };
+
+  setPerformanceMonitoring(enabled: boolean): void {
+    this.performanceMonitoring = enabled;
+  }
+
+  getPerformanceStats(): PerformanceStats {
+    return { ...this.performanceStats };
+  }
   // ---------------------------------------------------------------------------
   // Properties
   // ---------------------------------------------------------------------------
@@ -908,9 +937,38 @@ class Viewer {
       return;
     }
 
+    if (!this.performanceMonitoring) {
+      this.updateFrame(updateMarker, notify);
+      return;
+    }
+    // Count all passes (CAD, edges, pivot and orientation), not just the last render().
+    const info = this.renderer.info;
+    const autoReset = info.autoReset;
+    const before = { ...info.render };
+    info.autoReset = false;
+    const start = performance.now();
+    try {
+      this.updateFrame(updateMarker, notify);
+      this.performanceStats = {
+        frames: this.performanceStats.frames + 1,
+        cpuMs: performance.now() - start,
+        calls: info.render.calls - before.calls,
+        triangles: info.render.triangles - before.triangles,
+        lines: info.render.lines - before.lines,
+      };
+    } finally {
+      info.autoReset = autoReset;
+      if (autoReset) info.reset();
+    }
+  };
+
+  private updateFrame(updateMarker: boolean, notify: boolean): void {
     if (this._externalGl) {
       this.renderer.resetState();
     }
+    this.rendered.clipping.setActive(
+      this.renderer.localClippingEnabled === true,
+    );
     // When the composer is active, its RenderPass handles clearing;
     // skip manual clear to avoid double-clear artifacts.
     if (!this._studioManager.hasComposer) {
@@ -945,15 +1003,10 @@ class Viewer {
     // Render: use composer pipeline when available (AO + tone mapping + SMAA),
     // otherwise fall back to direct renderer.render().
     if (this._studioManager.hasComposer) {
+      this.cadInstancing.suspend("studio");
       this._studioManager.render();
     } else {
-      this.renderer.render(
-        this.rendered.scene,
-        this.rendered.camera.getCamera(),
-      );
-    }
-    if (!this._studioManager.hasComposer) {
-      this.renderPivotMarker();
+      this.renderCadScene(true);
     }
     this.cadTools.update();
 
@@ -1006,7 +1059,7 @@ class Viewer {
     if (this.onAfterRender) {
       this.onAfterRender();
     }
-  };
+  }
 
   /**
    * Start the animation loop
@@ -1162,7 +1215,10 @@ class Viewer {
       }
 
       // dispose all rendered state objects
+      this.cadInstancing.dispose();
       deepDispose(this._rendered.scene);
+      deepDispose(this._pivotMarkerScene);
+      deepDispose(this._rendered.orientationMarker);
 
       // Studio lights were children of the scene and have been disposed by
       deepDispose(this._rendered.gridHelper);
@@ -1211,6 +1267,50 @@ class Viewer {
     this.tree = null;
     this.compactTree = null;
     this.expandedTree = null;
+  }
+
+  /** Enable or disable the repeated-solid render cache without reloading the model. */
+  setGpuInstancing(enabled: boolean): void {
+    this.gpuInstancing = enabled;
+    if (!enabled) this.cadInstancing.dispose();
+    this.update(this.updateMarker);
+  }
+
+  getInstancingStats(): InstancingStats {
+    return this.cadInstancing.getStats();
+  }
+
+  private renderCadScene(pivot: boolean): void {
+    const { scene, camera, nestedGroup } = this.rendered;
+    let reason: string | null = null;
+    if (!this.gpuInstancing) reason = "disabled";
+    else if (this._externalGl) reason = "external-context";
+    else if (this.state.get("activeTab") === "studio") reason = "studio";
+    else if (this.renderer.localClippingEnabled) reason = "clipping";
+    else if (this.state.get("transparent")) reason = "transparent";
+    else if (this.state.get("activeTool") != null) reason = "tool";
+    else if (this.state.get("activeTab") === "zebra") reason = "zebra";
+    else if (nestedGroup !== this.compactNestedGroup) reason = "expanded";
+    else if (
+      this.state.get("animationMode") !== "none" ||
+      this.animation.hasTracks()
+    )
+      reason = "animation";
+    else if (this.state.get("normalLen") > 0) reason = "normals";
+    const draw = (): void => {
+      this.renderer.render(scene, camera.getCamera());
+      if (pivot) this.renderPivotMarker();
+    };
+    if (reason) {
+      this.cadInstancing.suspend(reason);
+      draw();
+    } else {
+      this.cadInstancing.sync(
+        nestedGroup.rootGroup!,
+        Object.values(nestedGroup.groups).filter(isObjectGroup),
+      );
+      this.cadInstancing.render(scene, draw);
+    }
   }
 
   private ensurePivotMarker(): void {
@@ -1296,7 +1396,10 @@ class Viewer {
     const hidden: THREE.Object3D[] = [];
 
     scene.traverse((obj) => {
-      if ((isLine(obj) || isPoints(obj)) && obj.visible) {
+      if (
+        (isLine(obj) || isLineSegments2(obj) || isPoints(obj)) &&
+        obj.visible
+      ) {
         hidden.push(obj);
         obj.visible = false;
       } else if (isMesh(obj) && obj.visible) {
@@ -1647,6 +1750,8 @@ class Viewer {
     renderOptions: RenderOptions,
     viewerOptions: ViewerOptions,
   ): void {
+    this.cadInstancing.dispose();
+    this.gpuInstancing = renderOptions.gpuInstancing ?? true;
     // Decode instanced/compressed format if detected
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     if (isInstancedFormat(shapes as any)) {
@@ -4099,6 +4204,25 @@ class Viewer {
     const shape = partData.shape;
     const geom = group.shapeGeometry;
 
+    // Decoded refs share CPU arrays. Detach before an in-place edit of one occurrence.
+    if (instanceSources.has(group)) {
+      geom.dispose();
+      for (const [name, attribute] of Object.entries(geom.attributes)) {
+        geom.setAttribute(name, attribute.clone());
+      }
+      if (geom.index) geom.setIndex(geom.index.clone());
+      if (group.edges && isLineSegments2(group.edges)) {
+        const old = group.edges.geometry;
+        group.edges.geometry = gpuTracker.trackGeometry(
+          old.clone(),
+          `Detached edges for ${path}`,
+        );
+        gpuTracker.untrack("geometry", old);
+        old.dispose();
+      }
+      instanceSources.delete(group);
+    }
+
     // --- Check whether topology is unchanged ---
     const flatLen = (
       data: number[] | number[][] | Float32Array | Uint32Array | undefined,
@@ -4710,10 +4834,7 @@ class Viewer {
         if (this._studioManager.hasComposer) {
           this._studioManager.render();
         } else {
-          this.renderer.render(
-            this.rendered.scene,
-            this.rendered.camera.getCamera(),
-          );
+          this.renderCadScene(false);
         }
       },
       onComplete: () => {

@@ -1,0 +1,61 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>CAD instancing benchmark</title>
+    <link rel="stylesheet" href="/dist/three-cad-viewer.css" />
+    <style>
+      body {
+        margin: 12px;
+        font: 14px system-ui;
+        color: #202326;
+        background: #fff;
+      }
+      header {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        flex-wrap: wrap;
+        margin-bottom: 12px;
+      }
+      select,
+      button {
+        font: inherit;
+        padding: 6px;
+      }
+      output {
+        white-space: pre-wrap;
+        display: block;
+        margin-top: 12px;
+      }
+    </style>
+    <script type="importmap">
+      { "imports": { "three": "/node_modules/three/build/three.module.js" } }
+    </script>
+  </head>
+  <body>
+    <header>
+      <label
+        >Hardware
+        <select id="count">
+          <option>100</option>
+          <option>1000</option>
+          <option>3000</option>
+        </select></label
+      >
+      <label
+        >Renderer
+        <select id="mode">
+          <option value="instanced">Instanced</option>
+          <option value="stencil">Stencil fix only</option>
+          <option value="baseline">Original</option>
+        </select></label
+      >
+      <button id="run">Measure rotation</button>
+    </header>
+    <div id="viewer"></div>
+    <output id="result"></output>
+    <script type="module" src="./instancing-page.js"></script>
+  </body>
+</html>

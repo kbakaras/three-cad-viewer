@@ -1,0 +1,429 @@
+{
+  "baselineRef": "58fd979f8c9685c0c2d7455a5363135bc35143ab",
+  "timestamp": "2026-09-27T08:32:35.310Z",
+  "measurements": [
+    {
+      "mode": "baseline",
+      "count": 100,
+      "partCount": 101,
+      "samples": 20,
+      "calls": 1626,
+      "triangles": 201131,
+      "cpuMs": {
+        "median": 17.100000023841858,
+        "p95": 23
+      },
+      "frameMs": {
+        "median": 16.69999999999891,
+        "p95": 8083.000000000001
+      },
+      "gpu": "ANGLE (Google, Vulkan 1.3.0 (SwiftShader Device (Subzero) (0x0000C0DE)), SwiftShader driver)",
+      "stats": null,
+      "memory": {
+        "geometries": 514,
+        "textures": 1
+      }
+    },
+    {
+      "mode": "stencil",
+      "count": 100,
+      "partCount": 101,
+      "samples": 20,
+      "calls": 313,
+      "triangles": 59147,
+      "cpuMs": {
+        "median": 8.599999994039536,
+        "p95": 11.799999982118607
+      },
+      "frameMs": {
+        "median": 16.699999999999932,
+        "p95": 3249.8
+      },
+      "gpu": "ANGLE (Google, Vulkan 1.3.0 (SwiftShader Device (Subzero) (0x0000C0DE)), SwiftShader driver)",
+      "stats": {
+        "reason": "disabled",
+        "eligibleInstances": 0,
+        "instancedObjects": 0,
+        "faceBatches": 0,
+        "edgeBatches": 0,
+        "rebuilds": 0
+      },
+      "memory": {
+        "geometries": 514,
+        "textures": 1
+      }
+    },
+    {
+      "mode": "instanced",
+      "count": 100,
+      "partCount": 101,
+      "samples": 20,
+      "calls": 28,
+      "triangles": 59147,
+      "cpuMs": {
+        "median": 7,
+        "p95": 9.699999988079071
+      },
+      "frameMs": {
+        "median": 16.699999999999932,
+        "p95": 3483.2
+      },
+      "gpu": "ANGLE (Google, Vulkan 1.3.0 (SwiftShader Device (Subzero) (0x0000C0DE)), SwiftShader driver)",
+      "stats": {
+        "reason": null,
+        "eligibleInstances": 101,
+        "instancedObjects": 100,
+        "faceBatches": 6,
+        "edgeBatches": 3,
+        "rebuilds": 9
+      },
+      "memory": {
+        "geometries": 423,
+        "textures": 1
+      }
+    },
+    {
+      "mode": "baseline",
+      "count": 1000,
+      "partCount": 1001,
+      "samples": 20,
+      "calls": 16026,
+      "triangles": 2008331,
+      "cpuMs": {
+        "median": 202.69999998807907,
+        "p95": 2454.0999999940395
+      },
+      "frameMs": {
+        "median": 200,
+        "p95": 1366.6000000000058
+      },
+      "gpu": "ANGLE (Google, Vulkan 1.3.0 (SwiftShader Device (Subzero) (0x0000C0DE)), SwiftShader driver)",
+      "stats": null,
+      "memory": {
+        "geometries": 5014,
+        "textures": 1
+      }
+    },
+    {
+      "mode": "stencil",
+      "count": 1000,
+      "partCount": 1001,
+      "samples": 20,
+      "calls": 3013,
+      "triangles": 584747,
+      "cpuMs": {
+        "median": 75.69999998807907,
+        "p95": 88
+      },
+      "frameMs": {
+        "median": 83.39999999999782,
+        "p95": 1249.9000000000015
+      },
+      "gpu": "ANGLE (Google, Vulkan 1.3.0 (SwiftShader Device (Subzero) (0x0000C0DE)), SwiftShader driver)",
+      "stats": {
+        "reason": "disabled",
+        "eligibleInstances": 0,
+        "instancedObjects": 0,
+        "faceBatches": 0,
+        "edgeBatches": 0,
+        "rebuilds": 0
+      },
+      "memory": {
+        "geometries": 5014,
+        "textures": 1
+      }
+    },
+    {
+      "mode": "instanced",
+      "count": 1000,
+      "partCount": 1001,
+      "samples": 20,
+      "calls": 28,
+      "triangles": 584747,
+      "cpuMs": {
+        "median": 71.2000000178814,
+        "p95": 227.40000000596046
+      },
+      "frameMs": {
+        "median": 66.70000000000073,
+        "p95": 233.29999999999927
+      },
+      "gpu": "ANGLE (Google, Vulkan 1.3.0 (SwiftShader Device (Subzero) (0x0000C0DE)), SwiftShader driver)",
+      "stats": {
+        "reason": null,
+        "eligibleInstances": 1001,
+        "instancedObjects": 1000,
+        "faceBatches": 6,
+        "edgeBatches": 3,
+        "rebuilds": 9
+      },
+      "memory": {
+        "geometries": 4023,
+        "textures": 1
+      }
+    },
+    {
+      "mode": "baseline",
+      "count": 3000,
+      "partCount": 3001,
+      "samples": 20,
+      "calls": 48026,
+      "triangles": 6025235,
+      "cpuMs": {
+        "median": 555.6999999880791,
+        "p95": 9026.200000017881
+      },
+      "frameMs": {
+        "median": 583.1999999999825,
+        "p95": 9349.5
+      },
+      "gpu": "ANGLE (Google, Vulkan 1.3.0 (SwiftShader Device (Subzero) (0x0000C0DE)), SwiftShader driver)",
+      "stats": null,
+      "memory": {
+        "geometries": 15014,
+        "textures": 1
+      }
+    },
+    {
+      "mode": "stencil",
+      "count": 3000,
+      "partCount": 3001,
+      "samples": 20,
+      "calls": 9013,
+      "triangles": 1753019,
+      "cpuMs": {
+        "median": 194.19999998807907,
+        "p95": 3365
+      },
+      "frameMs": {
+        "median": 200,
+        "p95": 3349.699999999997
+      },
+      "gpu": "ANGLE (Google, Vulkan 1.3.0 (SwiftShader Device (Subzero) (0x0000C0DE)), SwiftShader driver)",
+      "stats": {
+        "reason": "disabled",
+        "eligibleInstances": 0,
+        "instancedObjects": 0,
+        "faceBatches": 0,
+        "edgeBatches": 0,
+        "rebuilds": 0
+      },
+      "memory": {
+        "geometries": 15014,
+        "textures": 1
+      }
+    },
+    {
+      "mode": "instanced",
+      "count": 3000,
+      "partCount": 3001,
+      "samples": 20,
+      "calls": 28,
+      "triangles": 1753019,
+      "cpuMs": {
+        "median": 164.40000000596046,
+        "p95": 191.80000001192093
+      },
+      "frameMs": {
+        "median": 166.6999999999971,
+        "p95": 200
+      },
+      "gpu": "ANGLE (Google, Vulkan 1.3.0 (SwiftShader Device (Subzero) (0x0000C0DE)), SwiftShader driver)",
+      "stats": {
+        "reason": null,
+        "eligibleInstances": 3001,
+        "instancedObjects": 3000,
+        "faceBatches": 6,
+        "edgeBatches": 3,
+        "rebuilds": 9
+      },
+      "memory": {
+        "geometries": 12023,
+        "textures": 1
+      }
+    }
+  ],
+  "visual": [
+    {
+      "width": 1100,
+      "extras": false,
+      "changedFraction": 0,
+      "meanError": 0,
+      "colors": 291,
+      "stats": {
+        "reason": null,
+        "eligibleInstances": 101,
+        "instancedObjects": 100,
+        "faceBatches": 6,
+        "edgeBatches": 3,
+        "rebuilds": 9
+      }
+    },
+    {
+      "width": 1100,
+      "extras": true,
+      "changedFraction": 0,
+      "meanError": 0,
+      "colors": 290,
+      "stats": {
+        "reason": null,
+        "eligibleInstances": 99,
+        "instancedObjects": 98,
+        "faceBatches": 6,
+        "edgeBatches": 3,
+        "rebuilds": 9
+      },
+      "lifecycle": {
+        "clipping": "clipping",
+        "transparent": "transparent",
+        "memories": [423, 423, 423, 423],
+        "stats": {
+          "reason": null,
+          "eligibleInstances": 101,
+          "instancedObjects": 100,
+          "faceBatches": 6,
+          "edgeBatches": 3,
+          "rebuilds": 9
+        }
+      }
+    },
+    {
+      "width": 390,
+      "extras": false,
+      "changedFraction": 0,
+      "meanError": 0,
+      "colors": 166,
+      "stats": {
+        "reason": null,
+        "eligibleInstances": 101,
+        "instancedObjects": 100,
+        "faceBatches": 6,
+        "edgeBatches": 3,
+        "rebuilds": 9
+      }
+    },
+    {
+      "width": 390,
+      "extras": true,
+      "changedFraction": 0,
+      "meanError": 0,
+      "colors": 166,
+      "stats": {
+        "reason": null,
+        "eligibleInstances": 99,
+        "instancedObjects": 98,
+        "faceBatches": 6,
+        "edgeBatches": 3,
+        "rebuilds": 9
+      },
+      "lifecycle": {
+        "clipping": "clipping",
+        "transparent": "transparent",
+        "memories": [423, 423, 423, 423],
+        "stats": {
+          "reason": null,
+          "eligibleInstances": 101,
+          "instancedObjects": 100,
+          "faceBatches": 6,
+          "edgeBatches": 3,
+          "rebuilds": 9
+        }
+      }
+    }
+  ],
+  "model": [
+    {
+      "mode": "baseline",
+      "count": null,
+      "partCount": 502,
+      "samples": 20,
+      "calls": 8042,
+      "triangles": 2538047,
+      "cpuMs": {
+        "median": 79.5,
+        "p95": 107.09999999403954
+      },
+      "frameMs": {
+        "median": 83.30000000000291,
+        "p95": 600
+      },
+      "gpu": "ANGLE (Google, Vulkan 1.3.0 (SwiftShader Device (Subzero) (0x0000C0DE)), SwiftShader driver)",
+      "stats": null,
+      "memory": {
+        "geometries": 2519,
+        "textures": 1
+      }
+    },
+    {
+      "mode": "stencil",
+      "count": null,
+      "partCount": 502,
+      "samples": 20,
+      "calls": 1516,
+      "triangles": 596135,
+      "cpuMs": {
+        "median": 32.80000001192093,
+        "p95": 38.5
+      },
+      "frameMs": {
+        "median": 33.30000000000291,
+        "p95": 1016.5999999999985
+      },
+      "gpu": "ANGLE (Google, Vulkan 1.3.0 (SwiftShader Device (Subzero) (0x0000C0DE)), SwiftShader driver)",
+      "stats": {
+        "reason": "disabled",
+        "eligibleInstances": 0,
+        "instancedObjects": 0,
+        "faceBatches": 0,
+        "edgeBatches": 0,
+        "rebuilds": 0
+      },
+      "memory": {
+        "geometries": 2519,
+        "textures": 1
+      }
+    },
+    {
+      "mode": "instanced",
+      "count": null,
+      "partCount": 502,
+      "samples": 20,
+      "calls": 511,
+      "triangles": 596135,
+      "cpuMs": {
+        "median": 34.20000001788139,
+        "p95": 59.30000001192093
+      },
+      "frameMs": {
+        "median": 33.400000000001455,
+        "p95": 1033.2999999999993
+      },
+      "gpu": "ANGLE (Google, Vulkan 1.3.0 (SwiftShader Device (Subzero) (0x0000C0DE)), SwiftShader driver)",
+      "stats": {
+        "reason": null,
+        "eligibleInstances": 499,
+        "instancedObjects": 354,
+        "faceBatches": 19,
+        "edgeBatches": 19,
+        "rebuilds": 38
+      },
+      "memory": {
+        "geometries": 2203,
+        "textures": 1
+      }
+    }
+  ],
+  "modelVisual": {
+    "changedFraction": 0.0000544267053701016,
+    "meanError": 0.0015632559264634736,
+    "colors": 162,
+    "stats": {
+      "reason": null,
+      "eligibleInstances": 499,
+      "instancedObjects": 354,
+      "faceBatches": 19,
+      "edgeBatches": 19,
+      "rebuilds": 38
+    }
+  }
+}

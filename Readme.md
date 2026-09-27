@@ -356,11 +356,41 @@ To understand the data format, a look at the simple 1 unit sized box might be he
 
 ## APIs of Viewer, Display, Camera and Controls
 
+- [GPU instancing: model contract, API and benchmark](GPU%20instancing.md)
+
 - [API docs](https://bernhard-42.github.io/three-cad-viewer/Viewer.html)
 
 Back to [Github repo](https://github.com/bernhard-42/three-cad-viewer)
 
 ## Utilities
+
+### Performance Panel
+
+```javascript
+import { PerformancePanel } from "three-cad-viewer";
+
+const panel = new PerformancePanel(document.body, () => viewer);
+// When removing the embedding UI:
+// panel.dispose();
+```
+
+The standalone OCP viewer includes this panel at the bottom right. Click **FPS**
+to enable measurement; collapsing it stops collection. Compare continuous rotation
+at the same viewport size with hardware visible and hidden, after a short warm-up.
+
+- FPS counts browser frames containing a viewer redraw, at most once per animation
+  frame. An on-demand viewer at rest can show `0 FPS / Idle`; this is not a stall.
+- Frame and P95 show mean and 95th-percentile intervals between consecutive drawn
+  browser frames over the last second. P95 helps expose intermittent stutter.
+- CPU measures the JavaScript viewer update, including WebGL submission, not GPU
+  execution time. It excludes work outside that update, such as input handling.
+- Calls and triangles describe the last complete viewer update, including auxiliary
+  passes and triangulated thick edges. They are not unique model geometry counts.
+- Instances, batches and the fallback reason report the active instancing path.
+
+Programmatic access: `viewer.setPerformanceMonitoring(true)` and
+`viewer.getPerformanceStats()`. Disable collection after measuring. The panel
+does not force continuous rendering or use synchronous GPU timing calls.
 
 ### Logger
 

@@ -296,6 +296,8 @@ export interface DisplayOptions {
 
 /** Render options */
 export interface RenderOptions {
+  /** Batch repeated opaque CAD solids on the GPU (default: true). */
+  gpuInstancing?: boolean;
   /** Default edge color (default: 0x707070) */
   edgeColor?: number;
   /** Ambient light intensity (default: 1) */

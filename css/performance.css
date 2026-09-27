@@ -1,0 +1,29 @@
+.tcv-performance {
+  position: fixed;
+  right: 12px;
+  bottom: 12px;
+  z-index: 1000;
+  box-sizing: border-box;
+  max-width: calc(100vw - 24px);
+  max-height: calc(100vh - 24px);
+  overflow: auto;
+  padding: 6px 10px;
+  border: 1px solid #777;
+  border-radius: 4px;
+  background: #202124;
+  color: #f1f3f4;
+  font: 12px/1.5 monospace;
+  letter-spacing: 0;
+}
+
+.tcv-performance summary {
+  cursor: pointer;
+  min-width: 64px;
+}
+
+.tcv-performance pre {
+  margin: 8px 0 0;
+  font: inherit;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}

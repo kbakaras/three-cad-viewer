@@ -305,6 +305,7 @@ interface ClippingState {
  * Manages clipping planes, stencil rendering, and plane visualization.
  */
 class Clipping extends THREE.Group {
+  private active = false;
   center: number[] | null;
   distance: number;
   onNormalChange:
@@ -455,6 +456,7 @@ class Clipping extends THREE.Group {
           // Create clipping group with front and back stencils
           const clippingGroup = new THREE.Group();
           clippingGroup.name = `clipping-${i}`;
+          clippingGroup.visible = this.active;
 
           clippingGroup.add(
             createStencil(
@@ -608,6 +610,17 @@ class Clipping extends THREE.Group {
       mesh.material.visible = flag;
     }
   };
+
+  /** Stencil writers have no purpose when local clipping is disabled. */
+  setActive(flag: boolean): void {
+    if (flag === this.active) return;
+    this.active = flag;
+    for (const group of Object.values(this.nestedGroup.groups)) {
+      if (group instanceof ObjectGroup) {
+        for (const stencil of group.clipping.values()) stencil.visible = flag;
+      }
+    }
+  }
 
   /**
    * Save the current clipping state for later restoration.

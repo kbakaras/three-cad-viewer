@@ -5751,7 +5751,7 @@ exports[`Complete Rendering Snapshots > complete rendering snapshot for box (com
         "z": 1,
       },
       "type": "Group",
-      "visible": true,
+      "visible": false,
     },
     {
       "geometry": {
@@ -11339,7 +11339,7 @@ exports[`Complete Rendering Snapshots > complete rendering snapshot for box (com
         "z": 1,
       },
       "type": "Group",
-      "visible": true,
+      "visible": false,
     },
     {
       "geometry": {
@@ -16927,7 +16927,7 @@ exports[`Complete Rendering Snapshots > complete rendering snapshot for box (com
         "z": 1,
       },
       "type": "Group",
-      "visible": true,
+      "visible": false,
     },
     {
       "geometry": {
@@ -33415,7 +33415,7 @@ exports[`Complete Rendering Snapshots > complete rendering snapshot for box (exp
         "z": 1,
       },
       "type": "Group",
-      "visible": true,
+      "visible": false,
     },
     {
       "geometry": {
@@ -39003,7 +39003,7 @@ exports[`Complete Rendering Snapshots > complete rendering snapshot for box (exp
         "z": 1,
       },
       "type": "Group",
-      "visible": true,
+      "visible": false,
     },
     {
       "geometry": {
@@ -44591,7 +44591,7 @@ exports[`Complete Rendering Snapshots > complete rendering snapshot for box (exp
         "z": 1,
       },
       "type": "Group",
-      "visible": true,
+      "visible": false,
     },
     {
       "geometry": {
@@ -55991,7 +55991,7 @@ exports[`Complete Rendering Snapshots > complete rendering snapshot for box1 (co
         "z": 1,
       },
       "type": "Group",
-      "visible": true,
+      "visible": false,
     },
     {
       "geometry": {
@@ -56491,7 +56491,7 @@ exports[`Complete Rendering Snapshots > complete rendering snapshot for box1 (co
         "z": 1,
       },
       "type": "Group",
-      "visible": true,
+      "visible": false,
     },
     {
       "geometry": {
@@ -56991,7 +56991,7 @@ exports[`Complete Rendering Snapshots > complete rendering snapshot for box1 (co
         "z": 1,
       },
       "type": "Group",
-      "visible": true,
+      "visible": false,
     },
     {
       "geometry": {
@@ -61899,7 +61899,7 @@ exports[`Complete Rendering Snapshots > complete rendering snapshot for box1 (ex
         "z": 1,
       },
       "type": "Group",
-      "visible": true,
+      "visible": false,
     },
     {
       "geometry": {
@@ -62399,7 +62399,7 @@ exports[`Complete Rendering Snapshots > complete rendering snapshot for box1 (ex
         "z": 1,
       },
       "type": "Group",
-      "visible": true,
+      "visible": false,
     },
     {
       "geometry": {
@@ -62899,7 +62899,7 @@ exports[`Complete Rendering Snapshots > complete rendering snapshot for box1 (ex
         "z": 1,
       },
       "type": "Group",
-      "visible": true,
+      "visible": false,
     },
     {
       "geometry": {
@@ -76178,7 +76178,7 @@ exports[`Complete Rendering Snapshots > complete rendering snapshot for edges (c
         "z": 1,
       },
       "type": "Group",
-      "visible": true,
+      "visible": false,
     },
     {
       "geometry": {
@@ -84910,7 +84910,7 @@ exports[`Complete Rendering Snapshots > complete rendering snapshot for edges (c
         "z": 1,
       },
       "type": "Group",
-      "visible": true,
+      "visible": false,
     },
     {
       "geometry": {
@@ -93642,7 +93642,7 @@ exports[`Complete Rendering Snapshots > complete rendering snapshot for edges (c
         "z": 1,
       },
       "type": "Group",
-      "visible": true,
+      "visible": false,
     },
     {
       "geometry": {
@@ -116557,7 +116557,7 @@ exports[`Complete Rendering Snapshots > complete rendering snapshot for edges (e
         "z": 1,
       },
       "type": "Group",
-      "visible": true,
+      "visible": false,
     },
     {
       "geometry": {
@@ -125289,7 +125289,7 @@ exports[`Complete Rendering Snapshots > complete rendering snapshot for edges (e
         "z": 1,
       },
       "type": "Group",
-      "visible": true,
+      "visible": false,
     },
     {
       "geometry": {
@@ -134021,7 +134021,7 @@ exports[`Complete Rendering Snapshots > complete rendering snapshot for edges (e
         "z": 1,
       },
       "type": "Group",
-      "visible": true,
+      "visible": false,
     },
     {
       "geometry": {
@@ -161006,7 +161006,7 @@ exports[`Complete Rendering Snapshots > complete rendering snapshot for faces (c
         "z": 1,
       },
       "type": "Group",
-      "visible": true,
+      "visible": false,
     },
     {
       "geometry": {
@@ -169738,7 +169738,7 @@ exports[`Complete Rendering Snapshots > complete rendering snapshot for faces (c
         "z": 1,
       },
       "type": "Group",
-      "visible": true,
+      "visible": false,
     },
     {
       "geometry": {
@@ -178470,7 +178470,7 @@ exports[`Complete Rendering Snapshots > complete rendering snapshot for faces (c
         "z": 1,
       },
       "type": "Group",
-      "visible": true,
+      "visible": false,
     },
     {
       "geometry": {
@@ -205455,7 +205455,7 @@ exports[`Complete Rendering Snapshots > complete rendering snapshot for faces (e
         "z": 1,
       },
       "type": "Group",
-      "visible": true,
+      "visible": false,
     },
     {
       "geometry": {
@@ -214187,7 +214187,7 @@ exports[`Complete Rendering Snapshots > complete rendering snapshot for faces (e
         "z": 1,
       },
       "type": "Group",
-      "visible": true,
+      "visible": false,
     },
     {
       "geometry": {
@@ -222919,7 +222919,7 @@ exports[`Complete Rendering Snapshots > complete rendering snapshot for faces (e
         "z": 1,
       },
       "type": "Group",
-      "visible": true,
+      "visible": false,
     },
     {
       "geometry": {
@@ -363065,7 +363065,7 @@ exports[`Complete Rendering Snapshots > complete rendering snapshot for vertices
         "z": 1,
       },
       "type": "Group",
-      "visible": true,
+      "visible": false,
     },
     {
       "geometry": {
@@ -371797,7 +371797,7 @@ exports[`Complete Rendering Snapshots > complete rendering snapshot for vertices
         "z": 1,
       },
       "type": "Group",
-      "visible": true,
+      "visible": false,
     },
     {
       "geometry": {
@@ -380529,7 +380529,7 @@ exports[`Complete Rendering Snapshots > complete rendering snapshot for vertices
         "z": 1,
       },
       "type": "Group",
-      "visible": true,
+      "visible": false,
     },
     {
       "geometry": {
@@ -403621,7 +403621,7 @@ exports[`Complete Rendering Snapshots > complete rendering snapshot for vertices
         "z": 1,
       },
       "type": "Group",
-      "visible": true,
+      "visible": false,
     },
     {
       "geometry": {
@@ -412353,7 +412353,7 @@ exports[`Complete Rendering Snapshots > complete rendering snapshot for vertices
         "z": 1,
       },
       "type": "Group",
-      "visible": true,
+      "visible": false,
     },
     {
       "geometry": {
@@ -421085,7 +421085,7 @@ exports[`Complete Rendering Snapshots > complete rendering snapshot for vertices
         "z": 1,
       },
       "type": "Group",
-      "visible": true,
+      "visible": false,
     },
     {
       "geometry": {

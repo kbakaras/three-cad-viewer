@@ -45,6 +45,7 @@
     "test": "vitest",
     "test:ui": "vitest --ui",
     "test:run": "vitest run",
+    "test:instancing": "npm run build && node tests/browser/instancing.mjs",
     "test:run-slow": "RUN_SLOW_TESTS=true vitest run tests/integration/z-examples-snapshot.test.js",
     "test:coverage": "vitest run --coverage"
   },
@@ -58,6 +59,7 @@
   "devDependencies": {
     "@babel/core": "7.29.0",
     "@babel/eslint-parser": "7.28.6",
+    "@playwright/test": "1.63.0",
     "@rollup/plugin-image": "3.0.3",
     "@rollup/plugin-node-resolve": "16.0.3",
     "@rollup/plugin-terser": "1.0.0",

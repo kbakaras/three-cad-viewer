@@ -21,6 +21,7 @@ import { isMaterialXMaterial } from "../core/types";
 import { MATERIAL_PRESETS } from "../rendering/material-presets.js";
 import { logger } from "../utils/logger.js";
 import { TextureCache } from "../rendering/texture-cache.js";
+import { instanceSources } from "../rendering/cad-instancing.js";
 import type { TextureCacheInterface } from "../rendering/material-factory.js";
 import { applyTriplanarMapping } from "../rendering/triplanar.js";
 
@@ -594,6 +595,8 @@ class NestedGroup {
       subtype,
       renderback,
     );
+
+    instanceSources.set(group, shape);
 
     this.groups[path] = group;
     group.name = path.replaceAll("/", this.delim);

@@ -9,5 +9,6 @@ scratch
 .claude
 ANALYSIS
 coverage/
+test-results/
 working-docs
 .DS_Store
