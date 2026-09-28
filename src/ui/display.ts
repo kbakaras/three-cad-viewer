@@ -3,7 +3,11 @@
 // =============================================================================
 
 import * as THREE from "three";
-import { KeyMapper, EventListenerManager } from "../utils/utils.js";
+import {
+  KeyMapper,
+  EventListenerManager,
+  isShortcutBlocked,
+} from "../utils/utils.js";
 import type { KeyMappingConfig } from "../utils/utils.js";
 import { Slider } from "./slider.js";
 import { Toolbar, Button, ClickButton, Ellipsis } from "./toolbar.js";
@@ -716,7 +720,12 @@ class Display {
     ]);
 
     listeners.add(document, "keydown", (e) => {
-      if (e instanceof KeyboardEvent && e.key === "Escape" && this.help_shown) {
+      if (
+        e instanceof KeyboardEvent &&
+        !e.isComposing &&
+        e.key === "Escape" &&
+        this.help_shown
+      ) {
         e.preventDefault();
         this.showHelp(false);
       }
@@ -3147,7 +3156,7 @@ class Display {
    * Handle keyboard shortcut events on the container.
    */
   private _handleKeyboardShortcut = (e: Event): void => {
-    if (!(e instanceof KeyboardEvent)) return;
+    if (!(e instanceof KeyboardEvent) || e.isComposing) return;
 
     // ESC closes the material editor (works regardless of focus target)
     if (e.key === "Escape") {
@@ -3161,22 +3170,9 @@ class Display {
       }
     }
 
-    // Skip if modifier keys are held (avoid conflicts with modifier-based mouse actions)
-    if (e.ctrlKey || e.altKey || e.metaKey) return;
+    if (isShortcutBlocked(e)) return;
 
-    // Skip if target is a text-entry input element (but allow buttons/checkboxes)
-    const target = e.target;
-    if (
-      (target instanceof HTMLInputElement &&
-        target.type !== "button" &&
-        target.type !== "checkbox") ||
-      target instanceof HTMLTextAreaElement ||
-      target instanceof HTMLSelectElement
-    ) {
-      return;
-    }
-
-    const action = KeyMapper.getActionForKey(e.key);
+    const action = KeyMapper.getActionForEvent(e);
     if (action) {
       const result = this._dispatchAction(action);
       if (result !== "propagate") {

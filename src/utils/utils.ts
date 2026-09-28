@@ -280,6 +280,54 @@ interface KeyMappingConfig {
   alt: KeyEventKey;
 }
 
+const SHORTCUT_SYMBOLS: Record<string, readonly [string, string]> = {
+  Backquote: ["`", "~"],
+  Minus: ["-", "_"],
+  Equal: ["=", "+"],
+  BracketLeft: ["[", "{"],
+  BracketRight: ["]", "}"],
+  Backslash: ["\\", "|"],
+  Semicolon: [";", ":"],
+  Quote: ["'", '"'],
+  Comma: [",", "<"],
+  Period: [".", ">"],
+  Slash: ["/", "?"],
+  Space: [" ", " "],
+};
+
+function shortcutKey(
+  event: Pick<KeyboardEvent, "code" | "key" | "shiftKey">,
+): string {
+  // Interpret physical keys in the US layout; Caps Lock does not affect commands.
+  if (/^Key[A-Z]$/.test(event.code)) {
+    const letter = event.code.slice(3);
+    return event.shiftKey ? letter : letter.toLowerCase();
+  }
+  if (/^Digit[0-9]$/.test(event.code)) {
+    const digit = event.code.slice(5);
+    return event.shiftKey ? ")!@#$%^&*("[Number(digit)]! : digit;
+  }
+  const symbols = SHORTCUT_SYMBOLS[event.code];
+  if (symbols) return symbols[event.shiftKey ? 1 : 0];
+  // Preserve named keys and Num Lock behavior, and support events without code.
+  return event.key;
+}
+
+function isShortcutBlocked(event: KeyboardEvent): boolean {
+  if (event.isComposing || event.ctrlKey || event.altKey || event.metaKey) {
+    return true;
+  }
+  const target = event.target;
+  return (
+    (target instanceof HTMLInputElement &&
+      target.type !== "button" &&
+      target.type !== "checkbox") ||
+    target instanceof HTMLTextAreaElement ||
+    target instanceof HTMLSelectElement ||
+    (target instanceof HTMLElement && target.isContentEditable)
+  );
+}
+
 class _KeyMapper {
   private keyMapping: Record<MappedKey, KeyEventKey>;
   private actionShortcuts: Record<string, string>;
@@ -328,6 +376,10 @@ class _KeyMapper {
 
   getActionForKey = (key: string): string | undefined => {
     return this.reverseActionShortcuts[key];
+  };
+
+  getActionForEvent = (event: KeyboardEvent): string | undefined => {
+    return this.getActionForKey(shortcutKey(event));
   };
 
   getShortcutForAction = (action: string): string | undefined => {
@@ -477,6 +529,8 @@ export {
   sceneTraverse,
   prettyPrintVector,
   KeyMapper,
+  shortcutKey,
+  isShortcutBlocked,
   scaleLight,
   deepDispose,
   disposeGeometry,

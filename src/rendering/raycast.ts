@@ -1,5 +1,11 @@
 import * as THREE from "three";
-import { KeyMapper, isMesh, isPoints, isLine } from "../utils/utils.js";
+import {
+  KeyMapper,
+  isMesh,
+  isPoints,
+  isLine,
+  isShortcutBlocked,
+} from "../utils/utils.js";
 import { isObjectGroup, type ObjectGroup } from "../scene/objectgroup.js";
 import type { Camera } from "../camera/camera.js";
 
@@ -275,6 +281,7 @@ class Raycaster {
    * Handle key down event
    */
   onKeyDown = (e: KeyboardEvent): void => {
+    if (isShortcutBlocked(e)) return;
     if (this.raycastMode) {
       if (e.key == "Backspace") {
         this.callback({ key: "Backspace" });

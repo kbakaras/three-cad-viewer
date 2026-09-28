@@ -1,5 +1,6 @@
 import { TopoFilter, Raycaster } from "../../rendering/raycast.js";
 import type { DisplayLike } from "./tools.js";
+import { isShortcutBlocked, shortcutKey } from "../../utils/utils.js";
 
 /**
  * Type guard to check if a value is a number array of specific length.
@@ -424,14 +425,27 @@ class FilterByDropDownMenu {
   };
 
   private keybindSelect = (e: KeyboardEvent): void => {
-    const validKeys = ["n", "v", "e", "f", "s", "Escape"];
-    if (validKeys.indexOf(e.key) === -1) return;
-    if (e.key == "n") this.setValue("None");
-    else if (e.key == "v") this.setValue("Vertex");
-    else if (e.key == "e") this.setValue("Edge");
-    else if (e.key == "f") this.setValue("Face");
-    else if (e.key == "s") this.setValue("Solid");
-    else if (e.key == "Escape") this.closeDropdown(e);
+    if (isShortcutBlocked(e)) return;
+    switch (shortcutKey(e)) {
+      case "n":
+        this.setValue("None");
+        break;
+      case "v":
+        this.setValue("Vertex");
+        break;
+      case "e":
+        this.setValue("Edge");
+        break;
+      case "f":
+        this.setValue("Face");
+        break;
+      case "s":
+        this.setValue("Solid");
+        break;
+      case "Escape":
+        this.closeDropdown(e);
+        break;
+    }
   };
 
   private getOptionElements(): HTMLElement[] {

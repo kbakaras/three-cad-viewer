@@ -485,6 +485,26 @@ describe("Raycaster", () => {
       raycaster.init();
     });
 
+    test.each(["ctrlKey", "altKey", "metaKey", "isComposing"])(
+      "ignores Backspace with %s",
+      (flag) => {
+        raycaster.onKeyDown(
+          new KeyboardEvent("keydown", { key: "Backspace", [flag]: true }),
+        );
+        expect(mockCallback).not.toHaveBeenCalled();
+      },
+    );
+
+    test("does not delete selections while typing", () => {
+      const input = document.createElement("input");
+      document.body.appendChild(input);
+      input.dispatchEvent(
+        new KeyboardEvent("keydown", { bubbles: true, key: "Backspace" }),
+      );
+      expect(mockCallback).not.toHaveBeenCalled();
+      input.remove();
+    });
+
     test("triggers callback for Backspace key", () => {
       const event = new KeyboardEvent("keydown", { key: "Backspace" });
       raycaster.onKeyDown(event);

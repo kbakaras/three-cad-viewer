@@ -1267,6 +1267,7 @@ describe("FilterByDropDownMenu", () => {
   });
 
   afterEach(() => {
+    filter.show(false);
     display.cleanup();
   });
 
@@ -1345,6 +1346,53 @@ describe("FilterByDropDownMenu", () => {
       filter.setRaycaster(mockRaycaster);
       filter.show(true);
     });
+
+    test.each([
+      ["KeyV", "м", "Vertex"],
+      ["KeyE", "у", "Edge"],
+      ["KeyF", "а", "Face"],
+      ["KeyS", "ы", "Solid"],
+      ["KeyN", "т", "None"],
+      ["KeyV", "М", "Vertex"],
+    ])("uses physical key %s in another layout", (code, key, expected) => {
+      document.dispatchEvent(new KeyboardEvent("keydown", { code, key }));
+      expect(display.filterDropdown.value.innerText).toBe(expected);
+    });
+
+    test.each(["ctrlKey", "altKey", "metaKey", "isComposing", "shiftKey"])(
+      "ignores %s",
+      (flag) => {
+        filter.reset();
+        document.dispatchEvent(
+          new KeyboardEvent("keydown", {
+            code: "KeyV",
+            key: "м",
+            [flag]: true,
+          }),
+        );
+        expect(display.filterDropdown.value.innerText).toBe("None");
+      },
+    );
+
+    test.each(["input", "textarea", "select", "contenteditable"])(
+      "does not change filter while typing in %s",
+      (kind) => {
+        filter.reset();
+        const target = document.createElement(
+          kind === "contenteditable" ? "div" : kind,
+        );
+        if (kind === "contenteditable") target.contentEditable = "true";
+        display.container.appendChild(target);
+        target.dispatchEvent(
+          new KeyboardEvent("keydown", {
+            bubbles: true,
+            code: "KeyV",
+            key: "м",
+          }),
+        );
+        expect(display.filterDropdown.value.innerText).toBe("None");
+      },
+    );
 
     test("v key sets Vertex", () => {
       const event = new KeyboardEvent("keydown", { key: "v" });
