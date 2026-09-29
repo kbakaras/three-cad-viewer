@@ -85,18 +85,60 @@ try {
     initial.instances > 0,
     "Проверка должна затрагивать GPU instancing",
   );
-  await page.locator('[data-layer="labels"]').uncheck();
+  const tree = await page.evaluate(() => {
+    const tv = window.viewer.treeview;
+    tv.expandAll();
+    tv.openPath("/Model/Hardware/Bolts/Bolt/Body");
+    const kind = tv.getDomNode("/Model/Hardware/Bolts");
+    return {
+      leaf: tv.isLeaf(tv.findNodeByPath("/Model/Hardware/Bolts")),
+      nav: kind.querySelector(".tv-nav-marker").textContent,
+      children: kind.querySelector(".tv-children") !== null,
+      highlighted: kind.querySelector(".tv-node-label-highlight") !== null,
+    };
+  });
+  assert.deepEqual(tree, {
+    leaf: true,
+    nav: "",
+    children: false,
+    highlighted: true,
+  });
+  await page.locator('[data-path="/Model/Hardware/Bolts"] .tv-icon0').click();
   assert.equal(
     await page.evaluate(() =>
-      window.viewer.nestedGroup.groups["/Model/A/P1/Name/Text"].getVisibility(),
+      window.viewer.nestedGroup.groups[
+        "/Model/Hardware/Bolts/Bolt/Body"
+      ].getVisibility(),
     ),
     false,
   );
-  await page.evaluate(() => window.viewer.setState("/Model/A/P1", [0, 0]));
+  assert.equal(
+    await page.evaluate(() =>
+      window.viewer.nestedGroup.groups[
+        "/Model/Hardware/Dowels/Dowel/Body"
+      ].getVisibility(),
+    ),
+    true,
+  );
+  await page.locator('[data-path="/Model/Hardware/Bolts"] .tv-icon0').click();
+  await page.locator('[data-layer="labels"]').uncheck();
+  assert.equal(
+    await page.evaluate(() =>
+      window.viewer.nestedGroup.groups[
+        "/Model/Product/A/P1/Name/Text"
+      ].getVisibility(),
+    ),
+    false,
+  );
+  await page.evaluate(() =>
+    window.viewer.setState("/Model/Product/A/P1", [0, 0]),
+  );
   await page.locator('[data-layer="labels"]').check();
   assert.equal(
     await page.evaluate(() =>
-      window.viewer.nestedGroup.groups["/Model/A/P1/Name/Text"].getVisibility(),
+      window.viewer.nestedGroup.groups[
+        "/Model/Product/A/P1/Name/Text"
+      ].getVisibility(),
     ),
     false,
   );
@@ -104,7 +146,7 @@ try {
   assert.equal(
     await page.evaluate(() =>
       window.viewer.nestedGroup.groups[
-        "/Model/A/Hardware/Bolt/Body"
+        "/Model/Hardware/Bolts/Bolt/Body"
       ].getVisibility(),
     ),
     false,
@@ -113,11 +155,29 @@ try {
   assert.equal(
     await page.evaluate(() =>
       window.viewer.nestedGroup.groups[
-        "/Model/A/Hardware/Bolt/Body"
+        "/Model/Hardware/Bolts/Bolt/Body"
       ].getVisibility(),
     ),
     true,
   );
+  await page.evaluate(() => window.viewer.setState("/Model/Product/A", [0, 0]));
+  assert.equal(
+    await page.evaluate(() =>
+      window.viewer.nestedGroup.groups[
+        "/Model/Hardware/Bolts/Bolt/Body"
+      ].getVisibility(),
+    ),
+    false,
+  );
+  assert.equal(
+    await page.evaluate(() =>
+      window.viewer.nestedGroup.groups[
+        "/Model/Hardware/Bolts/BoltB/Body"
+      ].getVisibility(),
+    ),
+    true,
+  );
+  await page.evaluate(() => window.viewer.setState("/Model/Product/A", [1, 1]));
   await mkdir(path.join(root, "test-results"), { recursive: true });
   await page.screenshot({ path: "test-results/layers-desktop.png" });
   await page.setViewportSize({ width: 390, height: 720 });
@@ -126,8 +186,11 @@ try {
     v.resizeCadView(350, 220, 550, true);
     v.display.showToolsPanel(true);
   });
-  const fits = await page.locator(".tcv_layer_list label").evaluateAll((labels) =>
-    labels.every((label) => label.scrollWidth <= label.clientWidth + 1));
+  const fits = await page
+    .locator(".tcv_layer_list label")
+    .evaluateAll((labels) =>
+      labels.every((label) => label.scrollWidth <= label.clientWidth + 1),
+    );
   assert.ok(fits, "Подписи слоёв должны помещаться на узком экране");
   await page.screenshot({ path: "test-results/layers-mobile.png" });
   console.log("CAD, instancing и размещение слоёв проверены.");
@@ -154,7 +217,9 @@ try {
   await page.locator('[data-layer="labels"]').uncheck();
   assert.equal(
     await page.evaluate(() =>
-      window.viewer.nestedGroup.groups["/Model/B/P2/Name/Text"].getVisibility(),
+      window.viewer.nestedGroup.groups[
+        "/Model/Product/B/P2/Name/Text"
+      ].getVisibility(),
     ),
     false,
   );
@@ -164,14 +229,14 @@ try {
     await v.applySceneDelta({
       remove: [],
       add: [],
-      update: [{ id: "/Model/A/P1", name: "Renamed", parts: [] }],
+      update: [{ id: "/Model/Product/A/P1", name: "Renamed", parts: [] }],
     });
     v.update(true, false);
   });
   assert.equal(
     await page.evaluate(() =>
       window.viewer.nestedGroup.groups[
-        "/Model/A/Hardware/Bolt/Body"
+        "/Model/Hardware/Bolts/Bolt/Body"
       ].getVisibility(),
     ),
     false,
@@ -179,7 +244,9 @@ try {
   await page.locator('[data-layer="labels"]').check();
   assert.equal(
     await page.evaluate(() =>
-      window.viewer.nestedGroup.groups["/Model/B/P2/Name/Text"].getVisibility(),
+      window.viewer.nestedGroup.groups[
+        "/Model/Product/B/P2/Name/Text"
+      ].getVisibility(),
     ),
     true,
   );

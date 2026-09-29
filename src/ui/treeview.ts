@@ -245,6 +245,7 @@ class TreeView {
   handleNavigationClick = (node: TreeNode): ((e: Event) => void) => {
     return (e: Event) => {
       e.stopPropagation();
+      if (this.isLeaf(node)) return;
       node.expanded = !node.expanded;
       this.showChildContainer(node);
       if (this.debug) {
@@ -313,7 +314,7 @@ class TreeView {
           node.rendered = true;
         }
         // render placeholders for all children
-        if (node.expanded) {
+        if (node.expanded && !this.isLeaf(node)) {
           const childrenContainer = el.querySelector(".tv-children");
           if (
             childrenContainer instanceof HTMLElement &&
@@ -412,7 +413,7 @@ class TreeView {
 
     const navMarker = document.createElement("span");
     navMarker.className = "tv-nav-marker";
-    navMarker.innerHTML = node.children
+    navMarker.innerHTML = !this.isLeaf(node)
       ? node.expanded
         ? NAV_ICONS.expanded
         : NAV_ICONS.collapsed
@@ -467,7 +468,7 @@ class TreeView {
     nodeContent.appendChild(label);
 
     let childrenContainer: HTMLDivElement | null = null;
-    if (node.children) {
+    if (!this.isLeaf(node)) {
       childrenContainer = document.createElement("div");
       childrenContainer.className = "tv-children";
       childrenContainer.style.display = "none";
@@ -561,7 +562,8 @@ class TreeView {
   toggleLabelColor(node: TreeNode | null, path: string | null = null): void {
     if (!this.container) return;
 
-    const nodePath = path == null && node ? this.getNodePath(node) : path;
+    let nodePath = path == null && node ? this.getNodePath(node) : path;
+    if (nodePath) nodePath = this.visiblePath(nodePath);
     if (!nodePath) return;
 
     const nodeElement = this.container.querySelector(
@@ -850,6 +852,7 @@ class TreeView {
    * @param path - The path to open in the tree view.
    */
   openPath(path: string): void {
+    path = this.visiblePath(path);
     const parts = path.split("/").filter(Boolean);
     let current = "";
     let node: TreeNode | null = null;
@@ -861,7 +864,7 @@ class TreeView {
 
       if (node) {
         // Mark as expanded
-        if (node.children) {
+        if (!this.isLeaf(node)) {
           node.expanded = true;
         }
 
@@ -871,7 +874,7 @@ class TreeView {
         // Update nav marker if element exists
         if (el) {
           const navMarker = el.querySelector(".tv-nav-marker");
-          if (navMarker && node.children) {
+          if (navMarker && !this.isLeaf(node)) {
             navMarker.innerHTML = NAV_ICONS.expanded;
           }
         }
@@ -893,6 +896,16 @@ class TreeView {
     if (node) {
       this.toggleLabelColor(node);
     }
+  }
+
+  private visiblePath(path: string): string {
+    const parts = path.split("/").filter(Boolean);
+    let current = "";
+    for (const part of parts) {
+      current += "/" + part;
+      if (this.findNodeByPath(current)?.treeLeaf) return current;
+    }
+    return path;
   }
 
   /**

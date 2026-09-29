@@ -9,9 +9,9 @@ describe("Слои модели", () => {
     if (ctx) cleanup(ctx);
     ctx = null;
   });
-  const p1 = "/Model/A/P1",
-    p2 = "/Model/B/P2",
-    bolt = "/Model/A/Hardware/Bolt/Body";
+  const p1 = "/Model/Product/A/P1",
+    p2 = "/Model/Product/B/P2",
+    bolt = "/Model/Hardware/Bolts/Bolt/Body";
   function start() {
     ctx = setupViewer();
     ctx.viewer.render(
@@ -56,9 +56,9 @@ describe("Слои модели", () => {
     expect(visible(v, `${p2}/Name/Text`)).toBe(false);
     v.setLayerVisible("facades", true);
     expect(visible(v, bolt)).toBe(true);
-    v.setState("/Model/A", [0, 0]);
+    v.setState("/Model/Product/A", [0, 0]);
     expect(visible(v, bolt)).toBe(false);
-    v.setState("/Model/A", [1, 1]);
+    v.setState("/Model/Product/A", [1, 1]);
     v.setState(bolt, [0, 0]);
     v.setLayerVisible("hardware", false);
     v.setLayerVisible("hardware", true);
@@ -86,6 +86,153 @@ describe("Слои модели", () => {
       update: [{ id: p1, name: "Renamed panel", parts: [] }],
     });
     expect(visible(v, `${p1}/Body`)).toBe(true);
+  });
+
+  test("виды фурнитуры являются видимыми листьями, а выбор тела открывает вид", () => {
+    const v = start();
+    const kind = "/Model/Hardware/Bolts";
+    const tv = v.treeview;
+    tv.expandAll();
+    tv.openPath(bolt);
+    expect(tv.isLeaf(tv.findNodeByPath(kind))).toBe(true);
+    const row = tv.getDomNode(kind);
+    expect(row.querySelector(".tv-nav-marker").textContent).toBe("");
+    expect(row.querySelector(".tv-children")).toBeNull();
+    expect(tv.getDomNode(bolt)).toBeNull();
+    expect(row.querySelector(".tv-node-label-highlight")).not.toBeNull();
+    v.setState(kind, [0, 0]);
+    expect(visible(v, bolt)).toBe(false);
+    expect(visible(v, "/Model/Hardware/Bolts/BoltB/Body")).toBe(false);
+    expect(visible(v, "/Model/Hardware/Dowels/Dowel/Body")).toBe(true);
+    expect(visible(v, `${p1}/Body`)).toBe(true);
+    v.setLayerVisible("hardware", false);
+    v.setLayerVisible("hardware", true);
+    expect(visible(v, bolt)).toBe(false);
+  });
+
+  test("скрытие модуля и изделия ограничивает только их фурнитуру", () => {
+    const v = start();
+    const kindState = v.getState("/Model/Hardware/Bolts").slice();
+    v.setState(p1, [0, 0]);
+    expect(visible(v, bolt)).toBe(true);
+    v.setState("/Model/Product/A", [0, 0]);
+    expect(visible(v, bolt)).toBe(false);
+    expect(visible(v, "/Model/Hardware/Bolts/BoltB/Body")).toBe(true);
+    expect(v.getState("/Model/Hardware/Bolts")).toEqual(kindState);
+    v.setState("/Model/Product", [0, 0]);
+    v.setState(p2, [1, 1]);
+    expect(visible(v, bolt)).toBe(false);
+    expect(visible(v, "/Model/Hardware/Bolts/BoltB/Body")).toBe(false);
+    v.setState("/Model/Product/B", [1, 1]);
+    expect(visible(v, "/Model/Hardware/Bolts/BoltB/Body")).toBe(true);
+    expect(visible(v, bolt)).toBe(false);
+  });
+
+  test("новые крепежи наследуют отключённый вид, ограничения переживают полную загрузку", async () => {
+    const v = start();
+    const kind = "/Model/Hardware/Bolts";
+    v.setState(kind, [0, 0]);
+    const source = makeLayeredFurniture().parts[1].parts[0].parts[0];
+    const added = structuredClone(source);
+    added.id = `${kind}/NewBolt`;
+    added.name = "New bolt";
+    added.parts[0].id = `${added.id}/Body`;
+    await v.applySceneDelta({ remove: [], update: [], add: [added] });
+    expect(visible(v, `${added.id}/Body`)).toBe(false);
+    v.setState(kind, [1, 1]);
+    expect(visible(v, `${added.id}/Body`)).toBe(true);
+    v.setState("/Model/Product/A", [0, 0]);
+    v.setState("/Model/Hardware/Dowels", [0, 0]);
+    v.clear();
+    v.render(makeLayeredFurniture(), ctx.renderOptions, ctx.viewerOptions);
+    expect(visible(v, bolt)).toBe(false);
+    expect(visible(v, "/Model/Hardware/Bolts/BoltB/Body")).toBe(true);
+    expect(v.getState("/Model/Hardware/Dowels")).toEqual([0, 0]);
+    expect(v.getState("/Model/Product/A")).toEqual([0, 0]);
+  });
+
+  test("изменение и удаление метаданных дельтой обновляет дерево и ограничение", async () => {
+    const v = start();
+    v.setState("/Model/Product/A", [0, 0]);
+    const kind = "/Model/Hardware/Bolts";
+    const connector = `${kind}/Bolt`;
+    const body = v.nestedGroup.groups[bolt];
+    await v.applySceneDelta({
+      remove: [],
+      add: [],
+      update: [
+        { id: connector, name: "Bolt", parts: [], visible_if_any: [p2] },
+        { id: kind, name: "Конфирматы", parts: [] },
+      ],
+    });
+    expect(v.nestedGroup.groups[bolt]).toBe(body);
+    expect(visible(v, bolt)).toBe(true);
+    expect(v.treeview.isLeaf(v.treeview.findNodeByPath(kind))).toBe(false);
+  });
+
+  test("индивидуально скрытый крепёж остаётся скрытым при перестройке дерева", async () => {
+    const v = start();
+    const kind = "/Model/Hardware/Bolts";
+    v.setState(kind, [1, 1]);
+    v.setState(bolt, [0, 0]);
+    expect(v.getState(kind)).toEqual([2, 2]);
+    await v.applySceneDelta({
+      remove: [],
+      add: [],
+      update: [{ id: kind, name: "Renamed type", parts: [], tree_leaf: true }],
+    });
+    expect(visible(v, bolt)).toBe(false);
+    expect(visible(v, "/Model/Hardware/Bolts/BoltB/Body")).toBe(true);
+  });
+
+  test("первый крепёж наследует скрытие своего модуля", async () => {
+    ctx = setupViewer();
+    const model = makeLayeredFurniture();
+    const added = model.parts[1];
+    model.parts.splice(1, 1);
+    const v = ctx.viewer;
+    v.render(model, ctx.renderOptions, ctx.viewerOptions);
+    v.setState("/Model/Product/A", [0, 0]);
+    await v.applySceneDelta({ remove: [], update: [], add: [added] });
+    expect(visible(v, bolt)).toBe(false);
+    expect(visible(v, "/Model/Hardware/Bolts/BoltB/Body")).toBe(true);
+    v.setState("/Model/Product/A", [1, 1]);
+    expect(visible(v, bolt)).toBe(true);
+  });
+
+  test("новый вид наследует скрытие всей ветки фурнитуры", async () => {
+    const v = start();
+    v.setState("/Model/Hardware", [0, 0]);
+    const source = makeLayeredFurniture().parts[1].parts[1];
+    const added = structuredClone(source);
+    added.id = "/Model/Hardware/NewKind";
+    added.name = "New kind";
+    added.parts[0].id = `${added.id}/Dowel`;
+    added.parts[0].parts[0].id = `${added.id}/Dowel/Body`;
+    await v.applySceneDelta({ remove: [], update: [], add: [added] });
+    expect(v.getState(added.id)).toEqual([0, 0]);
+    expect(visible(v, `${added.id}/Dowel/Body`)).toBe(false);
+    v.setState("/Model/Hardware", [1, 1]);
+    expect(visible(v, `${added.id}/Dowel/Body`)).toBe(true);
+  });
+
+  test("запрет от модуля и конечные строки действуют в развёрнутой геометрии", () => {
+    const v = start();
+    v.setState("/Model/Product/A", [0, 0]);
+    v.setTransparent(true);
+    v.toggleGroup(true);
+    v.update(true, false);
+    const groups = Object.entries(v.nestedGroup.groups).filter(
+      ([id, group]) => id.startsWith(bolt + "/") && group.isObjectGroup,
+    );
+    expect(groups.length).toBeGreaterThan(0);
+    expect(groups.every(([, group]) => !group.visible)).toBe(true);
+    expect(
+      v.treeview.isLeaf(v.treeview.findNodeByPath("/Model/Hardware/Bolts")),
+    ).toBe(true);
+    v.treeview.expandAll();
+    v.treeview.openPath(groups[0][0]);
+    expect(v.treeview.getDomNode(groups[0][0])).toBeNull();
   });
 
   test("развёрнутая геометрия и прозрачность сохраняют фильтр", () => {

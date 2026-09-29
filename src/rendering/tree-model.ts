@@ -24,6 +24,7 @@ interface TreeNode {
   level: number;
   children?: Record<string, TreeNode>;
   expanded?: boolean;
+  treeLeaf?: boolean;
 }
 
 /**
@@ -57,6 +58,9 @@ function isTreeData(
 interface TreeModelOptions {
   linkIcons?: boolean;
   onStateChange?: ((node: TreeNode, iconNumber: IconIndex) => void) | null;
+  onVisibilityCommand?:
+    | ((path: string, icon: IconIndex, visible: boolean) => void)
+    | null;
 }
 
 /**
@@ -66,6 +70,9 @@ interface TreeModelOptions {
 class TreeModel {
   linkIcons: boolean;
   onStateChange: ((node: TreeNode, iconNumber: IconIndex) => void) | null;
+  onVisibilityCommand:
+    | ((path: string, icon: IconIndex, visible: boolean) => void)
+    | null;
   maxLevel: number;
   root: TreeNode | null;
 
@@ -77,6 +84,7 @@ class TreeModel {
   constructor(treeData: TreeData, options: TreeModelOptions = {}) {
     this.linkIcons = options.linkIcons !== undefined ? options.linkIcons : true;
     this.onStateChange = options.onStateChange || null;
+    this.onVisibilityCommand = options.onVisibilityCommand || null;
 
     this.maxLevel = 0;
     this.root = this._buildTreeStructure(treeData);
@@ -227,7 +235,7 @@ class TreeModel {
    * @returns True if the node is a leaf.
    */
   isLeaf(node: TreeNode): boolean {
-    return node.children == null;
+    return node.treeLeaf === true || node.children == null;
   }
 
   /**
@@ -296,13 +304,16 @@ class TreeModel {
    */
   getStates(): Record<string, [StateValue, StateValue]> {
     const states: Record<string, [StateValue, StateValue]> = {};
-    if (this.root) {
+    if (this.root)
       this.traverse(this.root, (node) => {
-        if (this.isLeaf(node)) {
-          states[this.getNodePath(node)] = node.state;
-        }
+        // Состояние группы задаёт умолчание для добавленных объектов,
+        // состояния её тел сохраняют индивидуальный выбор мышью.
+        if (
+          !node.children ||
+          (node.treeLeaf && !node.state.includes(States.mixed))
+        )
+          states[this.getNodePath(node)] = [...node.state];
       });
-    }
     return states;
   }
 
@@ -360,6 +371,12 @@ class TreeModel {
               ? States.unselected
               : States.selected;
         }
+
+        this.onVisibilityCommand?.(
+          this.getNodePath(node),
+          i,
+          node.state[i] === States.selected,
+        );
 
         // Notify of state change
         if (this.onStateChange) {
@@ -527,6 +544,7 @@ class TreeModel {
       node = this.findNodeByPath(current);
 
       if (node) {
+        if (node.treeLeaf) return node;
         if (node.children) {
           node.expanded = true;
         }

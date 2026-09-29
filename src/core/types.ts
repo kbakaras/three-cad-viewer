@@ -872,6 +872,10 @@ export interface Shapes {
   layer?: string | undefined;
   /** Показ разрешён, если виден хотя бы один из указанных узлов. */
   visible_if_any?: string[] | undefined;
+  /** Группа отображается конечной строкой дерева, сохраняя свои объекты. */
+  tree_leaf?: boolean | undefined;
+  /** Узел, команды скрытия которого ограничивают показ этой группы. */
+  visibility_owner?: string | undefined;
   /** Protocol version */
   version: number;
   /** Group name */

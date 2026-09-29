@@ -1959,6 +1959,7 @@ class Viewer {
       ambientLight,
       directLight,
     };
+    treeview.setStates(this.sceneLayers.getTreeStates(true));
 
     // Now that rendered state exists, configure camera position
     if (viewerOptions.position == null && viewerOptions.quaternion == null) {
@@ -3866,9 +3867,15 @@ class Viewer {
   }
 
   private _setTreeLabels(treeview: TreeView): void {
+    if (treeview.model)
+      treeview.model.onVisibilityCommand = this.sceneLayers.setTreeVisibility;
     const walk = (shape: Shapes): void => {
       const node = treeview.findNodeByPath(shape.id);
-      if (node) node.name = shape.name;
+      if (node) {
+        node.name = shape.name;
+        node.treeLeaf = shape.tree_leaf === true;
+        if (node.treeLeaf) node.expanded = false;
+      }
       shape.parts?.forEach(walk);
     };
     if (this.shapes) walk(this.shapes);
@@ -3937,6 +3944,7 @@ class Viewer {
     treeview.render();
 
     // Restore visibility states (updates both tree model and 3D objects)
+    this.rendered.treeview.setStates(this.sceneLayers.getTreeStates());
     this.rendered.treeview.setStates(savedStates);
 
     // Re-apply the current collapse state to the new tree
@@ -4477,13 +4485,13 @@ class Viewer {
       this.expandedTree = null;
     }
 
+    this.syncLayers();
     // Rebuild treeview if parts were added or removed in this batch
     if (this._treeNeedsRebuild) {
       this._treeNeedsRebuild = false;
       this._rebuildTreeView();
     }
 
-    this.syncLayers();
     // Re-render
     this.update(this.updateMarker);
 
@@ -4506,6 +4514,7 @@ class Viewer {
     const group = this.rendered.nestedGroup.groups[path];
     if (!entry || !group) throw new Error(`Part not found: ${path}`);
     const renamed = entry.name !== data.name;
+    const treeChanged = entry.tree_leaf !== data.tree_leaf;
     if (data.loc != null) {
       group.position.set(...data.loc[0]);
       group.quaternion.set(...data.loc[1]);
@@ -4531,8 +4540,10 @@ class Viewer {
     entry.layer = data.layer;
     entry.layers = data.layers;
     entry.visible_if_any = data.visible_if_any;
+    entry.visibility_owner = data.visibility_owner;
+    entry.tree_leaf = data.tree_leaf;
     if (parts) entry.parts = parts;
-    if (renamed) this._treeNeedsRebuild = true;
+    if (renamed || treeChanged) this._treeNeedsRebuild = true;
   }
 
   /** Apply a complete delta with one bounds/tree/render update. */
