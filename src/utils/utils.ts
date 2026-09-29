@@ -313,8 +313,14 @@ function shortcutKey(
   return event.key;
 }
 
-function isShortcutBlocked(event: KeyboardEvent): boolean {
-  if (event.isComposing || event.ctrlKey || event.altKey || event.metaKey) {
+function isShortcutBlocked(
+  event: KeyboardEvent,
+  allowMappedModifiers = false,
+): boolean {
+  if (
+    event.isComposing ||
+    (!allowMappedModifiers && (event.ctrlKey || event.altKey || event.metaKey))
+  ) {
     return true;
   }
   const target = event.target;
@@ -379,7 +385,12 @@ class _KeyMapper {
   };
 
   getActionForEvent = (event: KeyboardEvent): string | undefined => {
-    return this.getActionForKey(shortcutKey(event));
+    const modifiers = [
+      event.ctrlKey ? "Ctrl" : "",
+      event.altKey ? "Alt" : "",
+      event.metaKey ? "Meta" : "",
+    ].filter(Boolean);
+    return this.getActionForKey([...modifiers, shortcutKey(event)].join("+"));
   };
 
   getShortcutForAction = (action: string): string | undefined => {

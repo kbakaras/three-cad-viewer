@@ -427,6 +427,8 @@ class ViewerState {
       distance: "D",
       properties: "P",
       select: "S",
+      isolateSelection: "i",
+      hideSelection: "Alt+i",
       help: "h",
       play: " ",
       stop: "Escape",

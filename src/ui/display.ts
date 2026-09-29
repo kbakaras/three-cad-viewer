@@ -21,6 +21,7 @@ import { Info } from "./info.js";
 import type { Viewer } from "../core/viewer.js";
 import type { ObjectGroup } from "../scene/objectgroup.js";
 import type { ViewerState } from "../core/viewer-state.js";
+import type { PanelFilterState } from "../core/scene-layers.js";
 import { isClipIndex, CollapseState } from "../core/types.js";
 import type { Vector3Tuple } from "three";
 import type { ActiveTab, ThemeInput, ClipIndex } from "../core/types.js";
@@ -1040,6 +1041,14 @@ class Display {
   // UI Setup & State Subscriptions
   // ---------------------------------------------------------------------------
 
+  updatePanelFilter(filter: PanelFilterState | null): void {
+    const indicator = this.getElement("tcv_panel_filter");
+    indicator.hidden = filter === null;
+    this.getElement("tcv_panel_filter_status").textContent = filter
+      ? `Временно скрыто: ${filter.count}`
+      : "";
+  }
+
   updateLayers(
     layers: Record<string, { name: string; visible: boolean }>,
   ): void {
@@ -1300,6 +1309,9 @@ class Display {
     );
 
     this.setupClickEvent("tcv_studio_reset", this.handleStudioReset);
+    this.setupClickEvent("tcv_panel_filter_reset", () =>
+      this.viewer.clearPanelFilter(),
+    );
     this.setupClickEvent("tcv_mat_editor_toggle", this.handleMatEditorToggle);
     this.setupClickEvent("tcv_mat_editor_close", () => this.closeMatEditor());
     this.setupClickEvent("tcv_mat_editor_reset", this.handleMatEditorReset);
@@ -3189,9 +3201,13 @@ class Display {
       }
     }
 
-    if (isShortcutBlocked(e)) return;
-
     const action = KeyMapper.getActionForEvent(e);
+    if (isShortcutBlocked(e, action !== undefined)) return;
+    if (
+      e.repeat &&
+      (action === "isolateSelection" || action === "hideSelection")
+    )
+      return;
     if (action) {
       const result = this._dispatchAction(action);
       if (result !== "propagate") {
@@ -3240,6 +3256,12 @@ class Display {
 
     // Execute buttons
     switch (action) {
+      case "isolateSelection":
+        this.viewer.togglePanelIsolation();
+        return;
+      case "hideSelection":
+        this.viewer.hideSelectedPanels();
+        return;
       case "reset":
         this.reset();
         return;
@@ -3276,6 +3298,7 @@ class Display {
           this.container.focus();
           return;
         }
+        this.viewer.clearPanelSelection();
         // When a tool is active, let ESC propagate to the raycaster
         // for shape deselection
         if (this.state.get("activeTool")) return "propagate";

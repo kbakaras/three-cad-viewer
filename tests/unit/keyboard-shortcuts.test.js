@@ -154,6 +154,7 @@ describe("viewer keyboard shortcuts", () => {
     ["KeyT", "е", true, "tree"],
     ["KeyG", "п", false, "grid"],
     ["KeyG", "п", true, "gridxy"],
+    ["KeyI", "ш", false, "isolateSelection"],
     ["Digit5", "(", false, "iso"],
     ["Space", " ", false, "play"],
     ["Escape", "Escape", false, "stop"],
@@ -172,6 +173,44 @@ describe("viewer keyboard shortcuts", () => {
     },
   );
 
+  test.each([false, true])("ignores repeated KeyI with Alt=%s", (altKey) => {
+    press({ code: "KeyI", key: "ш", altKey, repeat: true });
+    expect(dispatch).not.toHaveBeenCalled();
+  });
+
+  test.each(["i", "ш", "Ш"])("Alt+KeyI overrides layout %s", (key) => {
+    expect(press({ code: "KeyI", key, altKey: true }).defaultPrevented).toBe(
+      true,
+    );
+    expect(dispatch).toHaveBeenCalledExactlyOnceWith("hideSelection");
+  });
+
+  test.each(["ctrlKey", "metaKey", "shiftKey", "isComposing"])(
+    "Alt+KeyI ignores extra %s",
+    (flag) => {
+      expect(
+        press({ code: "KeyI", key: "ш", altKey: true, [flag]: true })
+          .defaultPrevented,
+      ).toBe(false);
+      expect(dispatch).not.toHaveBeenCalled();
+    },
+  );
+
+  test("KeyO no longer dispatches hideSelection", () => {
+    press({ code: "KeyO", key: "щ" });
+    expect(dispatch).not.toHaveBeenCalled();
+  });
+
+  test("modifier bindings are configurable without affecting plain keys", () => {
+    fixture.viewer.setKeyMap({ hideSelection: "Alt+q", isolateSelection: "i" });
+    press({ code: "KeyQ", key: "й", altKey: true });
+    expect(dispatch).toHaveBeenCalledExactlyOnceWith("hideSelection");
+    dispatch.mockClear();
+    press({ code: "KeyI", key: "ш", altKey: true });
+    press({ code: "KeyQ", key: "й" });
+    expect(dispatch).not.toHaveBeenCalled();
+  });
+
   test.each(["input", "textarea", "select", "contenteditable"])(
     "ignores typing in %s",
     (kind) => {
@@ -187,6 +226,8 @@ describe("viewer keyboard shortcuts", () => {
       expect(press({ code: "KeyT", key: "е" }, child).defaultPrevented).toBe(
         false,
       );
+      expect(dispatch).not.toHaveBeenCalled();
+      press({ code: "KeyI", key: "ш", altKey: true }, child);
       expect(dispatch).not.toHaveBeenCalled();
     },
   );

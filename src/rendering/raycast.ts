@@ -260,6 +260,10 @@ class Raycaster {
    * Handle left mouse button down event
    */
   onMouseKeyDown = (e: MouseEvent): void => {
+    if (e.ctrlKey && e.button === THREE.MOUSE.LEFT) {
+      this.lastPosition = null;
+      return;
+    }
     if (this.raycastMode && this.camera) {
       if (e.button == THREE.MOUSE.LEFT || e.button == THREE.MOUSE.RIGHT) {
         this.lastPosition = this.camera.getPosition().clone();
@@ -271,6 +275,7 @@ class Raycaster {
    * Handle left mouse button up event
    */
   onMouseKeyUp = (e: MouseEvent): void => {
+    if (e.ctrlKey && e.button === THREE.MOUSE.LEFT) return;
     if (this.raycastMode && this.camera && this.lastPosition) {
       if (e.button == THREE.MOUSE.LEFT) {
         if (this.lastPosition.distanceTo(this.camera.getPosition()) < 1e-6) {

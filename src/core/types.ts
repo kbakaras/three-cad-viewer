@@ -231,6 +231,8 @@ export type ActionShortcutName =
   | "distance"
   | "properties"
   | "select"
+  | "isolateSelection"
+  | "hideSelection"
   | "help"
   | "play"
   | "stop"
@@ -874,6 +876,8 @@ export interface Shapes {
   visible_if_any?: string[] | undefined;
   /** Группа отображается конечной строкой дерева, сохраняя свои объекты. */
   tree_leaf?: boolean | undefined;
+  /** Pick descendants as one independently selectable group. */
+  selection_root?: boolean | undefined;
   /** Узел, команды скрытия которого ограничивают показ этой группы. */
   visibility_owner?: string | undefined;
   /** Protocol version */

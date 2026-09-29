@@ -597,6 +597,38 @@ describe("ObjectGroup - setRoughness", () => {
 });
 
 describe("ObjectGroup - highlight", () => {
+  test("group selection survives hover, tools, transparency and shared Studio materials", () => {
+    const selected = createObjectGroupWithMesh();
+    const other = createObjectGroupWithMesh();
+    selected.renderback = true;
+    other.renderback = true;
+    const cadColor = selected.originalColor.getHex();
+    const studio = new THREE.MeshPhysicalMaterial({ color: 0xe0ccaa });
+    studio.onBeforeCompile = vi.fn();
+    studio.customProgramCacheKey = () => "custom-mapping";
+    selected.setGroupSelected(true);
+    selected.highlight(true);
+    selected.unhighlight(false);
+    selected.setTransparent(true);
+    selected.enterStudioMode(studio, studio);
+    other.enterStudioMode(studio, studio);
+    expect(selected.front.material).not.toBe(studio);
+    expect(selected.front.material.onBeforeCompile).toBe(studio.onBeforeCompile);
+    expect(selected.front.material.customProgramCacheKey()).toBe("custom-mapping");
+    expect(selected.front.material.color.getHex()).toBe(0x53a0e3);
+    expect(selected.back.material.color.getHex()).toBe(0x53a0e3);
+    expect(other.front.material.color.getHex()).toBe(0xe0ccaa);
+    selected.clearHighlights();
+    expect(selected.front.material.color.getHex()).toBe(0x53a0e3);
+    selected.setGroupSelected(false);
+    expect(selected.front.material).toBe(studio);
+    expect(selected.back.material).toBe(studio);
+    selected.setGroupSelected(true);
+    selected.leaveStudioMode();
+    expect(selected.front.material.color.getHex()).toBe(0x53a0e3);
+    selected.setGroupSelected(false);
+    expect(selected.front.material.color.getHex()).toBe(cadColor);
+  });
   test("highlights front mesh", () => {
     const group = createObjectGroupWithMesh();
     const originalColor = group.originalColor.clone();

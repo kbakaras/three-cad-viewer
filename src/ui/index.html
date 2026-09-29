@@ -7,6 +7,10 @@
                 <span class='tcv_toggle_tools'></span><span class="tcv_tools_label">Tools</span>
             </div>
             <div class="tcv_cad_tree tcv_round">
+                <div class="tcv_panel_filter" hidden title="Временный фильтр панелей">
+                    <span class="tcv_panel_filter_status" role="status" aria-live="polite"></span>
+                    <button class="tcv_panel_filter_reset tcv_button_reset" type="button" title="Снять временный фильтр" aria-label="Снять временный фильтр"></button>
+                </div>
                 <details class="tcv_cad_layers" hidden open>
                     <summary>Слои</summary>
                     <div class="tcv_layer_list"></div>
@@ -404,6 +408,22 @@
                     <tr>
                         <td></td>
                         <td><b>Mouse Selection</b></td>
+                    </tr>
+                    <tr>
+                        <td>Выбрать / снять выбор панели</td>
+                        <td>Ctrl + щелчок левой кнопкой</td>
+                    </tr>
+                    <tr>
+                        <td>Изолировать панели / отменить изоляцию</td>
+                        <td>&lt;{{isolateSelection}}&gt;</td>
+                    </tr>
+                    <tr>
+                        <td>Скрыть выбранные панели / отменить скрытие</td>
+                        <td>&lt;{{hideSelection}}&gt;</td>
+                    </tr>
+                    <tr>
+                        <td>Снять выделение панелей</td>
+                        <td>Esc</td>
                     </tr>
                     <tr>
                         <td>Pick element</td>

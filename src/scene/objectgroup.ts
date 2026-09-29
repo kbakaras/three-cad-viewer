@@ -101,6 +101,11 @@ class ObjectGroup extends THREE.Group {
   clipping: Map<number, THREE.Group>;
 
   isSelected: boolean;
+  isGroupSelected = false;
+  private _hovered = false;
+  private _originalEdgeColor: THREE.Color | null = null;
+  private _highlightFrontSource: ColoredMaterial | null = null;
+  private _highlightBackSource: ColoredMaterial | null = null;
   originalColor: THREE.Color | null;
   originalBackColor: THREE.Color | null;
   originalWidth: number | null;
@@ -233,9 +238,7 @@ class ObjectGroup extends THREE.Group {
   setBack(mesh: FaceMesh): void {
     this.add(mesh);
     this.back = mesh;
-    if (!this.front) {
-      this.originalBackColor = mesh.material.color.clone();
-    }
+    this.originalBackColor = mesh.material.color.clone();
   }
 
   /**
@@ -253,10 +256,11 @@ class ObjectGroup extends THREE.Group {
       throw new Error("Edge material must have color and linewidth properties");
     }
     this.edgeMaterial = mat;
-    // Only cache edge color/width if this is an edge-only object (no faces)
+    this._originalEdgeColor = mat.color.clone();
+    this.originalWidth = mat.linewidth;
+    // For edge-only objects the primary color is the edge color.
     if (!this.front) {
       this.originalColor = this.edgeMaterial.color.clone();
-      this.originalWidth = this.edgeMaterial.linewidth;
     }
   }
 
@@ -309,15 +313,19 @@ class ObjectGroup extends THREE.Group {
     this.widen(false);
   }
 
+  setGroupSelected(flag: boolean): void {
+    if (this.isGroupSelected === flag) return;
+    this.isGroupSelected = flag;
+    this._applyHighlight(this._hovered || this.isSelected || flag);
+  }
+
   /**
    * Remove highlight from this object.
    * @param keepSelection - If true, preserve selection state.
    */
   unhighlight(keepSelection: boolean): void {
-    if (!keepSelection || !this.isSelected) {
-      this.isSelected = false;
-      this.highlight(false);
-    }
+    if (!keepSelection) this.isSelected = false;
+    this.highlight(false);
     this.widen(false);
   }
 
@@ -326,7 +334,9 @@ class ObjectGroup extends THREE.Group {
    */
   private _getHighlightColor(): THREE.Color {
     return new THREE.Color(
-      this.isSelected ? HIGHLIGHT_COLOR_SELECTED : HIGHLIGHT_COLOR_HOVER,
+      this.isSelected || this.isGroupSelected
+        ? HIGHLIGHT_COLOR_SELECTED
+        : HIGHLIGHT_COLOR_HOVER,
     );
   }
 
@@ -379,6 +389,30 @@ class ObjectGroup extends THREE.Group {
    * @param flag - Whether to apply highlight (true) or restore original color (false).
    */
   highlight(flag: boolean): void {
+    this._hovered = flag;
+    this._applyHighlight(flag || this.isSelected || this.isGroupSelected);
+  }
+
+  private _applyHighlight(flag: boolean): void {
+    // Studio materials are shared: tint a private clone, never other panels.
+    if (this._isStudioMode) {
+      for (const [mesh, key] of [
+        [this.front, "_highlightFrontSource"],
+        [this.back, "_highlightBackSource"],
+      ] as const) {
+        if (!mesh) continue;
+        if (flag && !this[key]) {
+          this[key] = mesh.material;
+          mesh.material = mesh.material.clone();
+          mesh.material.onBeforeCompile = this[key]!.onBeforeCompile;
+          mesh.material.customProgramCacheKey = this[key]!.customProgramCacheKey;
+        } else if (!flag && this[key]) {
+          mesh.material.dispose();
+          mesh.material = this[key]!;
+          this[key] = null;
+        }
+      }
+    }
     const hColor = this._getHighlightColor();
 
     // Find primary material (front face, vertices, or edges)
@@ -397,7 +431,13 @@ class ObjectGroup extends THREE.Group {
     if (this.back) {
       this._applyColorToMaterial(
         this.back.material,
-        flag ? hColor : this.originalBackColor!,
+        flag ? hColor : (this.originalBackColor ?? this.originalColor)!,
+      );
+    }
+    if (this.edgeMaterial && this.front && this._originalEdgeColor) {
+      this._applyColorToMaterial(
+        this.edgeMaterial,
+        flag ? hColor : this._originalEdgeColor,
       );
     }
   }
@@ -406,8 +446,8 @@ class ObjectGroup extends THREE.Group {
    * Clear all highlights and selection state.
    */
   clearHighlights(): void {
-    this.highlight(false);
     this.isSelected = false;
+    this.highlight(false);
     this.widen(false);
   }
 
@@ -480,7 +520,10 @@ class ObjectGroup extends THREE.Group {
         this.originalColor = new THREE.Color(color);
       }
       this.edgeMaterial.color = new THREE.Color(color);
+      this._originalEdgeColor = new THREE.Color(color);
       this.edgeMaterial.needsUpdate = true;
+      if (this.isGroupSelected || this.isSelected || this._hovered)
+        this._applyHighlight(true);
     }
   }
 
@@ -492,7 +535,11 @@ class ObjectGroup extends THREE.Group {
     if (this.edgeMaterial && !this.edgeMaterial.vertexColors) {
       this.edge_color = color;
       this.edgeMaterial.color = new THREE.Color(color);
+      this._originalEdgeColor = new THREE.Color(color);
+      if (!this.front) this.originalColor = new THREE.Color(color);
       this.edgeMaterial.needsUpdate = true;
+      if (this.isGroupSelected || this.isSelected || this._hovered)
+        this._applyHighlight(true);
     }
   }
 
@@ -787,6 +834,7 @@ class ObjectGroup extends THREE.Group {
     studioBack: THREE.MeshPhysicalMaterial | null,
   ): void {
     if (this._isStudioMode) return;
+    this._applyHighlight(false);
 
     // --- Save CAD state ---
     if (this.front) {
@@ -816,7 +864,7 @@ class ObjectGroup extends THREE.Group {
       this.front.visible = this.front.material.visible;
       this.front.material = studioFront;
       // Update originalColor to studio material's color for correct highlight
-      this.originalColor = studioFront.color;
+      this.originalColor = studioFront.color.clone();
     }
 
     // --- Swap back material ---
@@ -825,10 +873,13 @@ class ObjectGroup extends THREE.Group {
       this.back.visible = this.back.material.visible;
       this.back.material = studioBack;
       // Update originalBackColor for correct highlight on back face
-      this.originalBackColor = studioBack.color;
+      this.originalBackColor = studioBack.color.clone();
     }
 
     this._isStudioMode = true;
+    this._applyHighlight(
+      this._hovered || this.isSelected || this.isGroupSelected,
+    );
   }
 
   /**
@@ -841,6 +892,7 @@ class ObjectGroup extends THREE.Group {
    */
   leaveStudioMode(): void {
     if (!this._isStudioMode) return;
+    this._applyHighlight(false);
 
     // --- Restore front material ---
     if (this.front && this._cadFrontMaterial) {
@@ -873,6 +925,9 @@ class ObjectGroup extends THREE.Group {
     }
 
     this._isStudioMode = false;
+    this._applyHighlight(
+      this._hovered || this.isSelected || this.isGroupSelected,
+    );
   }
 
   /**

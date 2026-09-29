@@ -1,6 +1,6 @@
 import { makeFurniture } from "./furniture.js";
 
-export function makeLayeredFurniture() {
+export function makeLayeredFurniture({ thirdPanel = false } = {}) {
   const shape = makeFurniture(1).parts[1].shape;
   const solid = (id, x = 0, color = "#82a3ad") => ({
     id,
@@ -20,6 +20,7 @@ export function makeLayeredFurniture() {
     id,
     name: id.split("/").pop(),
     layer,
+    selection_root: true,
     parts: [
       solid(`${id}/Body`, x),
       {
@@ -112,6 +113,12 @@ export function makeLayeredFurniture() {
       },
     ],
   };
+  if (thirdPanel)
+    model.parts[0].parts.push({
+      id: "/Model/Product/C",
+      name: "Module C",
+      parts: [panel("/Model/Product/C/P3", 80)],
+    });
   const versioned = (node) => {
     node.version = 3;
     node.parts?.forEach(versioned);

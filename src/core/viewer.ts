@@ -51,6 +51,7 @@ import { PickedObject, Raycaster, TopoFilter } from "../rendering/raycast.js";
 import { StudioManager } from "./studio-manager.js";
 import { ViewerState } from "./viewer-state.js";
 import { SceneLayers } from "./scene-layers.js";
+import type { PanelFilterState } from "./scene-layers.js";
 import { logger } from "../utils/logger.js";
 import { gpuTracker } from "../utils/gpu-tracker.js";
 import { CadInstancing, instanceSources } from "../rendering/cad-instancing.js";
@@ -382,6 +383,8 @@ class Viewer {
   // Survives clear() so reused viewers remember the previous geometry.
   private _previousGridSize: number = 0;
   private sceneLayers = new SceneLayers();
+  private selectedPanels = new Set<string>();
+  private panelPointer: { id: number; x: number; y: number } | null = null;
 
   // Animation
   hasAnimationLoop: boolean;
@@ -582,6 +585,11 @@ class Viewer {
     this.info = null;
 
     this.setPickHandler(true);
+    const canvas = this.renderer.domElement;
+    canvas.addEventListener("pointerdown", this.panelPointerDown);
+    canvas.addEventListener("pointermove", this.panelPointerMove);
+    canvas.addEventListener("pointerup", this.panelPointerUp);
+    canvas.addEventListener("pointercancel", this.panelPointerCancel);
 
     this.renderer.domElement.addEventListener("contextmenu", (e: Event) =>
       e.stopPropagation(),
@@ -1117,6 +1125,12 @@ class Viewer {
    * @public
    */
   dispose(): void {
+    const canvas = this.renderer.domElement;
+    canvas.removeEventListener("pointerdown", this.panelPointerDown);
+    canvas.removeEventListener("pointermove", this.panelPointerMove);
+    canvas.removeEventListener("pointerup", this.panelPointerUp);
+    canvas.removeEventListener("pointercancel", this.panelPointerCancel);
+    this.setPickHandler(false);
     this.clear();
 
     // dispose studio resources (composer, floor, env, shadows — must be before renderer)
@@ -1170,6 +1184,7 @@ class Viewer {
    * @public
    */
   clear(): void {
+    this.panelPointer = null;
     if (this._rendered) {
       // stop animation
       this.hasAnimationLoop = false;
@@ -1671,6 +1686,7 @@ class Viewer {
     this.tree = expanded ? this.expandedTree : this.compactTree;
     this.rendered.scene.children[0] = nestedGroup.rootGroup!;
     this.rendered.nestedGroup = nestedGroup;
+    this.syncPanelSelection();
     timer.split("added shapes to scene");
 
     deepDispose(this.rendered.treeview);
@@ -1959,7 +1975,7 @@ class Viewer {
       ambientLight,
       directLight,
     };
-    treeview.setStates(this.sceneLayers.getTreeStates(true));
+    treeview.setStates(this.sceneLayers.getTreeStates(true), true);
 
     // Now that rendered state exists, configure camera position
     if (viewerOptions.position == null && viewerOptions.quaternion == null) {
@@ -2131,6 +2147,7 @@ class Viewer {
     // switchToTab handler paint the right content (or, for studio, show
     // the spinner over a blank canvas while async setup runs).
     const targetTab = viewerOptions.tab ?? "tree";
+    this.syncPanelSelection();
     if (targetTab === "tree") {
       this.update(true, false);
     } else {
@@ -2617,11 +2634,134 @@ class Viewer {
     }
   }
 
+  private panelPointerDown = (event: PointerEvent): void => {
+    this.panelPointer =
+      event.button === 0 &&
+      event.ctrlKey &&
+      !event.altKey &&
+      !event.metaKey &&
+      !event.shiftKey
+        ? { id: event.pointerId, x: event.clientX, y: event.clientY }
+        : null;
+  };
+
+  private panelPointerMove = (event: PointerEvent): void => {
+    const start = this.panelPointer;
+    if (
+      start &&
+      (start.id !== event.pointerId ||
+        Math.hypot(event.clientX - start.x, event.clientY - start.y) > 4)
+    )
+      this.panelPointer = null;
+  };
+
+  private panelPointerCancel = (): void => {
+    this.panelPointer = null;
+  };
+
+  private panelPointerUp = (event: PointerEvent): void => {
+    const start = this.panelPointer;
+    this.panelPointer = null;
+    if (
+      !this._rendered ||
+      !start ||
+      start.id !== event.pointerId ||
+      event.button !== 0 ||
+      !event.ctrlKey ||
+      event.altKey ||
+      event.metaKey ||
+      event.shiftKey ||
+      Math.hypot(event.clientX - start.x, event.clientY - start.y) > 4
+    )
+      return;
+    const canvas = this.renderer.domElement;
+    const rect = canvas.getBoundingClientRect();
+    const raycaster = new Raycaster(
+      this.rendered.camera,
+      canvas,
+      rect.width,
+      rect.height,
+      this.bb_max / 30,
+      this.rendered.nestedGroup.rootGroup!,
+      () => {},
+    );
+    raycaster.onPointerMove(event);
+    const hit = raycaster.getIntersectedObjs()[0];
+    let object: THREE.Object3D | null = hit?.object ?? null;
+    while (object && !isObjectGroup(object)) object = object.parent;
+    if (object) this.togglePanelSelection(object.name.replaceAll("|", "/"));
+    raycaster.dispose();
+    this.display.container.focus();
+  };
+
+  getSelectedPanels(): string[] {
+    return [...this.selectedPanels];
+  }
+
+  togglePanelSelection(path: string): void {
+    const id = this.sceneLayers.getSelectionRoot(path);
+    if (!id) return;
+    if (this.selectedPanels.has(id)) this.selectedPanels.delete(id);
+    else this.selectedPanels.add(id);
+    this.syncPanelSelection();
+    this.update(this.updateMarker, false);
+  }
+
+  clearPanelSelection(): void {
+    if (!this.selectedPanels.size) return;
+    this.selectedPanels.clear();
+    this.syncPanelSelection();
+    this.update(this.updateMarker, false);
+  }
+
+  togglePanelIsolation(): void {
+    if (!this._rendered) return;
+    this.sceneLayers.togglePanelIsolation(this.selectedPanels);
+    this.display.updatePanelFilter(this.getPanelFilter());
+    this.update(this.updateMarker, false);
+  }
+
+  hideSelectedPanels(): void {
+    if (!this._rendered || !this.selectedPanels.size) return;
+    this.sceneLayers.hideSelectedPanels(this.selectedPanels);
+    this.selectedPanels.clear();
+    this.syncPanelSelection();
+    this.display.updatePanelFilter(this.getPanelFilter());
+    this.update(this.updateMarker, false);
+  }
+
+  getPanelFilter(): PanelFilterState | null {
+    return this.shapes ? this.sceneLayers.getPanelFilter() : null;
+  }
+
+  clearPanelFilter(): void {
+    if (!this.sceneLayers.getPanelFilter()) return;
+    this.sceneLayers.clearPanelFilter();
+    this.display.updatePanelFilter(null);
+    this.update(this.updateMarker, false);
+  }
+
+  private syncPanelSelection(): void {
+    if (!this._rendered) return;
+    for (const [path, group] of Object.entries(
+      this.rendered.nestedGroup.groups,
+    )) {
+      if (!isObjectGroup(group)) continue;
+      const id = this.sceneLayers.getSelectionRoot(path);
+      group.setGroupSelected(
+        !!id &&
+          this.selectedPanels.has(id) &&
+          this.sceneLayers.isSelectionGeometry(path),
+      );
+    }
+  }
+
   /**
    * Find the shape that was double clicked and send notification
    * @param e - a DOM PointerEvent or MouseEvent
    */
   pick = (e: PointerEvent | MouseEvent): void => {
+    if (e.ctrlKey || !this._rendered) return;
     const raycaster = new Raycaster(
       this.rendered.camera,
       this.renderer.domElement,
@@ -3805,7 +3945,15 @@ class Viewer {
 
   private syncLayers(): void {
     this.sceneLayers.setScene(this.shapes);
+    if (this.shapes) {
+      const roots = this.sceneLayers.getSelectionRoots();
+      this.selectedPanels = new Set(
+        [...this.selectedPanels].filter((id) => roots.has(id)),
+      );
+      this.syncPanelSelection();
+    }
     this.display.updateLayers(this.getLayers());
+    this.display.updatePanelFilter(this.getPanelFilter());
   }
 
   /**
@@ -3868,7 +4016,13 @@ class Viewer {
 
   private _setTreeLabels(treeview: TreeView): void {
     if (treeview.model)
-      treeview.model.onVisibilityCommand = this.sceneLayers.setTreeVisibility;
+      treeview.model.onVisibilityCommand = (path, icon, visible, restoring) => {
+        this.sceneLayers.setTreeVisibility(path, icon, visible);
+        if (visible && !restoring) {
+          this.sceneLayers.showPanelsForTreePath(path);
+          this.display.updatePanelFilter(this.getPanelFilter());
+        }
+      };
     const walk = (shape: Shapes): void => {
       const node = treeview.findNodeByPath(shape.id);
       if (node) {
@@ -3944,8 +4098,8 @@ class Viewer {
     treeview.render();
 
     // Restore visibility states (updates both tree model and 3D objects)
-    this.rendered.treeview.setStates(this.sceneLayers.getTreeStates());
-    this.rendered.treeview.setStates(savedStates);
+    this.rendered.treeview.setStates(this.sceneLayers.getTreeStates(), true);
+    this.rendered.treeview.setStates(savedStates, true);
 
     // Re-apply the current collapse state to the new tree
     const collapse = this.state.get("collapse") as CollapseState;
@@ -4525,7 +4679,7 @@ class Viewer {
     if (isObjectGroup(group)) {
       if (data.color !== undefined && !Array.isArray(data.color)) {
         group.originalColor = new THREE.Color(data.color);
-        if (group.front && !group.isSelected) {
+        if (group.front && !group.isSelected && !group.isGroupSelected) {
           group.front.material.color.copy(group.originalColor);
         }
       }
@@ -4542,6 +4696,7 @@ class Viewer {
     entry.visible_if_any = data.visible_if_any;
     entry.visibility_owner = data.visibility_owner;
     entry.tree_leaf = data.tree_leaf;
+    entry.selection_root = data.selection_root;
     if (parts) entry.parts = parts;
     if (renamed || treeChanged) this._treeNeedsRebuild = true;
   }
@@ -4640,7 +4795,7 @@ class Viewer {
       this.rendered.nestedGroup.setStudioShowEdges(false);
     }
     this.updateBounds();
-    this.rendered.treeview.setStates(states);
+    this.rendered.treeview.setStates(states, true);
     for (const [id, state] of Object.entries(requestedStates))
       this.setState(id, state);
     if (expanded) this.toggleGroup(true);

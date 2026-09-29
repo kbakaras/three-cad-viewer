@@ -59,7 +59,12 @@ interface TreeModelOptions {
   linkIcons?: boolean;
   onStateChange?: ((node: TreeNode, iconNumber: IconIndex) => void) | null;
   onVisibilityCommand?:
-    | ((path: string, icon: IconIndex, visible: boolean) => void)
+    | ((
+        path: string,
+        icon: IconIndex,
+        visible: boolean,
+        restoring?: boolean,
+      ) => void)
     | null;
 }
 
@@ -71,7 +76,12 @@ class TreeModel {
   linkIcons: boolean;
   onStateChange: ((node: TreeNode, iconNumber: IconIndex) => void) | null;
   onVisibilityCommand:
-    | ((path: string, icon: IconIndex, visible: boolean) => void)
+    | ((
+        path: string,
+        icon: IconIndex,
+        visible: boolean,
+        restoring?: boolean,
+      ) => void)
     | null;
   maxLevel: number;
   root: TreeNode | null;
@@ -321,22 +331,31 @@ class TreeModel {
    * Set the state of a node by path.
    * @param path - The node path.
    * @param state - The new state [icon0State, icon1State].
+   * @param restoring - Restore saved state rather than issue a visibility command.
    */
-  setState(path: string, state: [StateValue, StateValue]): void {
+  setState(
+    path: string,
+    state: [StateValue, StateValue],
+    restoring = false,
+  ): void {
     const node = this.findNodeByPath(path);
     if (node) {
-      this.toggleNodeState(node, 0, state[0] === States.selected);
-      this.toggleNodeState(node, 1, state[1] === States.selected);
+      this.toggleNodeState(node, 0, state[0] === States.selected, restoring);
+      this.toggleNodeState(node, 1, state[1] === States.selected, restoring);
     }
   }
 
   /**
    * Set multiple node states at once.
    * @param states - Map of path -> state array.
+   * @param restoring - Preserve temporary visibility during state restoration.
    */
-  setStates(states: Record<string, [StateValue, StateValue]>): void {
+  setStates(
+    states: Record<string, [StateValue, StateValue]>,
+    restoring = false,
+  ): void {
     for (const path in states) {
-      this.setState(path, states[path]);
+      this.setState(path, states[path], restoring);
     }
   }
 
@@ -345,12 +364,14 @@ class TreeModel {
    * @param node - The node to toggle.
    * @param iconNumber - Which icon (0 or 1).
    * @param force - Force to specific state (true=selected, false=unselected, null=toggle).
+   * @param restoring - Whether this is a saved-state restoration.
    * @returns True if state was changed.
    */
   toggleNodeState(
     node: TreeNode,
     iconNumber: IconIndex,
     force: boolean | null = null,
+    restoring = false,
   ): boolean {
     const currentState = node.state[iconNumber];
     if (currentState === States.disabled) {
@@ -376,6 +397,7 @@ class TreeModel {
           this.getNodePath(node),
           i,
           node.state[i] === States.selected,
+          restoring,
         );
 
         // Notify of state change

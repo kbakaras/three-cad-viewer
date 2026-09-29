@@ -1,11 +1,16 @@
 import type { Shapes, VisibilityState } from "./types.js";
 import type { ObjectGroup } from "../scene/objectgroup.js";
 
+export interface PanelFilterState {
+  readonly count: number;
+}
+
 interface Leaf {
   layers: string[];
   dependencies: string[][];
   ancestors: string[];
   owners: string[];
+  selectionRoot: string | null;
 }
 
 /** Независимый от дерева фильтр слоёв и связей видимости. */
@@ -18,6 +23,8 @@ export class SceneLayers {
   private ownerStates = new Map<string, VisibilityState>();
   private terminalStates = new Map<string, VisibilityState>();
   private branches = new Set<string>();
+  private selectionRoots = new Set<string>();
+  private hiddenPanels = new Set<string>();
   private branchCommands = new Map<
     string,
     { path: string; icon: 0 | 1; visible: boolean }
@@ -29,9 +36,11 @@ export class SceneLayers {
     this.owners.clear();
     this.terminals.clear();
     this.branches.clear();
+    this.selectionRoots.clear();
     const walk = (node: Shapes, parent: Leaf): void => {
       if (node.visibility_owner) this.owners.add(node.visibility_owner);
       if (node.tree_leaf) this.terminals.add(node.id);
+      if (node.selection_root) this.selectionRoots.add(node.id);
       const current = {
         layers: node.layer ? [...parent.layers, node.layer] : parent.layers,
         dependencies:
@@ -42,6 +51,7 @@ export class SceneLayers {
         owners: node.visibility_owner
           ? [...parent.owners, node.visibility_owner]
           : parent.owners,
+        selectionRoot: node.selection_root ? node.id : parent.selectionRoot,
       };
       if (node.parts) {
         this.branches.add(node.id);
@@ -49,7 +59,19 @@ export class SceneLayers {
       } else this.leaves.set(node.id, current);
     };
     if (tree)
-      walk(tree, { layers: [], dependencies: [], ancestors: [], owners: [] });
+      walk(tree, {
+        layers: [],
+        dependencies: [],
+        ancestors: [],
+        owners: [],
+        selectionRoot: null,
+      });
+    // clear() temporarily removes the scene before render() replaces it.
+    if (tree) {
+      this.hiddenPanels = new Set(
+        [...this.hiddenPanels].filter((id) => this.selectionRoots.has(id)),
+      );
+    }
     // Первый крепёж модуля и новый вид наследуют ранее скрытую ветку.
     for (const [ids, states] of [
       [this.owners, this.ownerStates],
@@ -65,6 +87,67 @@ export class SceneLayers {
         }
         if (changed) states.set(id, state);
       }
+    }
+  }
+
+  getSelectionRoots(): ReadonlySet<string> {
+    return this.selectionRoots;
+  }
+
+  private leafFor(path: string): Leaf | undefined {
+    path = path.replaceAll("|", "/");
+    while (path && !this.leaves.has(path))
+      path = path.slice(0, path.lastIndexOf("/"));
+    return this.leaves.get(path);
+  }
+
+  getSelectionRoot(path: string): string | null {
+    path = path.replaceAll("|", "/");
+    if (this.selectionRoots.has(path)) return path;
+    return this.leafFor(path)?.selectionRoot ?? null;
+  }
+
+  isSelectionGeometry(path: string): boolean {
+    const leaf = this.leafFor(path);
+    return !!leaf?.selectionRoot && !leaf.dependencies.length;
+  }
+
+  getPanelFilter(): PanelFilterState | null {
+    return this.hiddenPanels.size ? { count: this.hiddenPanels.size } : null;
+  }
+
+  clearPanelFilter(): void {
+    this.hiddenPanels.clear();
+  }
+
+  togglePanelIsolation(selected: ReadonlySet<string>): void {
+    if (!selected.size) {
+      this.clearPanelFilter();
+      return;
+    }
+    const others = new Set(
+      [...this.selectionRoots].filter((id) => !selected.has(id)),
+    );
+    const alreadyIsolated =
+      others.size === this.hiddenPanels.size &&
+      [...others].every((id) => this.hiddenPanels.has(id));
+    this.hiddenPanels = alreadyIsolated ? new Set() : others;
+  }
+
+  hideSelectedPanels(selected: ReadonlySet<string>): void {
+    for (const id of selected) {
+      if (this.selectionRoots.has(id)) this.hiddenPanels.add(id);
+    }
+  }
+
+  showPanelsForTreePath(path: string): void {
+    path = path.replaceAll("|", "/");
+    const panel = this.isSelectionGeometry(path)
+      ? this.getSelectionRoot(path)
+      : null;
+    for (const id of this.hiddenPanels) {
+      if (id === panel || id === path || id.startsWith(path + "/"))
+        this.hiddenPanels.delete(id);
     }
   }
 
@@ -123,15 +206,14 @@ export class SceneLayers {
     const entries: [ObjectGroup, Leaf][] = [];
     const subjects = new Set<string>();
     const enabled = (leaf: Leaf): boolean =>
-      leaf.layers.every((id) => this.choices.get(id) !== false);
+      leaf.layers.every((id) => this.choices.get(id) !== false) &&
+      (!leaf.selectionRoot || !this.hiddenPanels.has(leaf.selectionRoot));
 
     for (const [path, value] of Object.entries(groups)) {
       const group = value as ObjectGroup;
       if (!group.isObjectGroup) continue;
-      let id = path;
       // Развёрнутые грани и рёбра наследуют метаданные исходного тела.
-      while (id && !this.leaves.has(id)) id = id.slice(0, id.lastIndexOf("/"));
-      const leaf = this.leaves.get(id);
+      const leaf = this.leafFor(path);
       if (!leaf) continue;
       entries.push([group, leaf]);
       if (

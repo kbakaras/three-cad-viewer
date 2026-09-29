@@ -745,11 +745,15 @@ class TreeView {
   /**
    * Set multiple node states at once.
    * @param states - Map of path -> state array.
+   * @param restoring - Preserve temporary visibility during state restoration.
    */
-  setStates(states: Record<string, [StateValue, StateValue]>): void {
+  setStates(
+    states: Record<string, [StateValue, StateValue]>,
+    restoring = false,
+  ): void {
     if (!this.model) return;
 
-    this.model.setStates(states);
+    this.model.setStates(states, restoring);
     this.update();
     this.updateHandler(true);
     this.notificationHandler();
