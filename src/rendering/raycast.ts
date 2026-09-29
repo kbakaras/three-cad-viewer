@@ -9,6 +9,13 @@ import {
 import { isObjectGroup, type ObjectGroup } from "../scene/objectgroup.js";
 import type { Camera } from "../camera/camera.js";
 
+function visibleInTree(object: THREE.Object3D): boolean {
+  for (let node: THREE.Object3D | null = object; node; node = node.parent) {
+    if (!node.visible) return false;
+  }
+  return true;
+}
+
 /**
  * Filter types for topology-based raycasting.
  */
@@ -189,7 +196,7 @@ class Raycaster {
       const isValidType = isMesh(object) || isPoints(object) || isLine(object);
       if (
         isValidType &&
-        object.visible &&
+        visibleInTree(object) &&
         !Array.isArray(object.material) &&
         object.material.visible
       ) {

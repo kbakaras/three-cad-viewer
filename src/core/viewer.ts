@@ -50,6 +50,7 @@ import { version } from "../_version.js";
 import { PickedObject, Raycaster, TopoFilter } from "../rendering/raycast.js";
 import { StudioManager } from "./studio-manager.js";
 import { ViewerState } from "./viewer-state.js";
+import { SceneLayers } from "./scene-layers.js";
 import { logger } from "../utils/logger.js";
 import { gpuTracker } from "../utils/gpu-tracker.js";
 import { CadInstancing, instanceSources } from "../rendering/cad-instancing.js";
@@ -380,6 +381,7 @@ class Viewer {
   // geometry is "the same model" for clip-slider preservation.
   // Survives clear() so reused viewers remember the previous geometry.
   private _previousGridSize: number = 0;
+  private sceneLayers = new SceneLayers();
 
   // Animation
   hasAnimationLoop: boolean;
@@ -963,6 +965,7 @@ class Viewer {
   };
 
   private updateFrame(updateMarker: boolean, notify: boolean): void {
+    this.sceneLayers.apply(this.rendered.nestedGroup.groups);
     if (this._externalGl) {
       this.renderer.resetState();
     }
@@ -1244,6 +1247,7 @@ class Viewer {
       // Shapes is data (not THREE.js objects), setting to null allows GC
       this.shapes = null;
     }
+    this.syncLayers();
 
     if (this.expandedNestedGroup != null) {
       deepDispose(this.expandedNestedGroup);
@@ -1763,6 +1767,7 @@ class Viewer {
     // Decode any remaining inline base64 buffers (e.g., edge/vertex-only objects)
     decodeInlineBuffers(shapes);
     this.shapes = shapes;
+    this.syncLayers();
     this.renderOptions = renderOptions;
     this.setViewerDefaults(viewerOptions);
 
@@ -3785,6 +3790,23 @@ class Viewer {
   // Tree State Management
   // ---------------------------------------------------------------------------
 
+  getLayers(): Record<string, { name: string; visible: boolean }> {
+    return this.sceneLayers.getLayers();
+  }
+
+  setLayerVisible(id: string, visible: boolean): void {
+    this.sceneLayers.setVisible(id, visible);
+    this.display.updateLayers(this.getLayers());
+    if (this._rendered)
+      this.sceneLayers.apply(this.rendered.nestedGroup.groups);
+    this.update(this.updateMarker, false);
+  }
+
+  private syncLayers(): void {
+    this.sceneLayers.setScene(this.shapes);
+    this.display.updateLayers(this.getLayers());
+  }
+
   /**
    * Get states of all treeview leaves.
    * @returns object mapping paths to visibility states.
@@ -4461,6 +4483,7 @@ class Viewer {
       this._rebuildTreeView();
     }
 
+    this.syncLayers();
     // Re-render
     this.update(this.updateMarker);
 
@@ -4505,6 +4528,9 @@ class Viewer {
     }
     const parts = entry.parts;
     Object.assign(entry, data);
+    entry.layer = data.layer;
+    entry.layers = data.layers;
+    entry.visible_if_any = data.visible_if_any;
     if (parts) entry.parts = parts;
     if (renamed) this._treeNeedsRebuild = true;
   }

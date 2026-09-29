@@ -600,7 +600,8 @@ class ObjectGroup extends THREE.Group {
   /**
    * Get the current visibility state.
    */
-  getVisibility(): boolean {
+  getVisibility(ignoreLayerFilter: boolean = false): boolean {
+    if (!ignoreLayerFilter && !this.visible) return false;
     if (this.front) {
       const frontVisible = this._isStudioMode
         ? this.front.visible

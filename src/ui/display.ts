@@ -1040,6 +1040,25 @@ class Display {
   // UI Setup & State Subscriptions
   // ---------------------------------------------------------------------------
 
+  updateLayers(
+    layers: Record<string, { name: string; visible: boolean }>,
+  ): void {
+    const section = this.getElement("tcv_cad_layers");
+    const list = this.getElement("tcv_layer_list");
+    section.hidden = Object.keys(layers).length === 0;
+    list.replaceChildren();
+    for (const [id, layer] of Object.entries(layers)) {
+      const label = document.createElement("label");
+      const input = document.createElement("input");
+      input.type = "checkbox";
+      input.checked = layer.visible;
+      input.dataset.layer = id;
+      input.onchange = () => this.viewer.setLayerVisible(id, input.checked);
+      label.append(input, document.createTextNode(layer.name));
+      list.append(label);
+    }
+  }
+
   /**
    * Set up the UI and attach the canvas element.
    * Called by Viewer constructor, not intended for direct use.

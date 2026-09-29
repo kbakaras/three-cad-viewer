@@ -866,6 +866,12 @@ export type VisibilityState = [VisibilityValue, VisibilityValue];
 
 /** Hierarchical/grouped objects of type Shape */
 export interface Shapes {
+  /** Независимые слои сцены: идентификатор -> отображаемое название. */
+  layers?: Record<string, string> | undefined;
+  /** Слой узла, наследуемый всеми его потомками. */
+  layer?: string | undefined;
+  /** Показ разрешён, если виден хотя бы один из указанных узлов. */
+  visible_if_any?: string[] | undefined;
   /** Protocol version */
   version: number;
   /** Group name */

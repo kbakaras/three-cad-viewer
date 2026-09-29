@@ -176,6 +176,40 @@ input[type="radio"] {
   margin-bottom: 3px;
 }
 
+.tcv_cad_layers {
+  flex-shrink: 0;
+  padding: 4px 6px;
+  border-bottom: 1px solid lightgray;
+  font-size: 12px;
+}
+
+.tcv_cad_layers[hidden] {
+  display: none;
+}
+
+.tcv_cad_layers summary {
+  cursor: pointer;
+  padding: 3px 0;
+}
+
+.tcv_layer_list {
+  max-height: 140px;
+  overflow: auto;
+}
+
+.tcv_layer_list label {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 24px;
+  overflow-wrap: anywhere;
+  cursor: pointer;
+}
+
+.tcv_layer_list input {
+  flex-shrink: 0;
+}
+
 .tcv_cad_tree {
   display: flex;
   flex-direction: column;
