@@ -46,6 +46,7 @@ export type { LogLevel } from "./utils/logger.js";
 export type { InstancingStats } from "./rendering/cad-instancing.js";
 export type { PerformanceStats } from "./core/viewer.js";
 export { PerformancePanel } from "./ui/performance-panel.js";
+export { CameraPanel } from "./ui/camera-panel.js";
 
 // GPU tracker type exports
 export type {
