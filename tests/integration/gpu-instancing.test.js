@@ -236,7 +236,7 @@ describe("GPU instancing", () => {
     }
   });
 
-  test("tools, expanded geometry, zebra and animation use the original scene", () => {
+  test("measurement tools use the original scene", () => {
     const ctx = setup();
     try {
       const v = ctx.viewer;
@@ -248,18 +248,6 @@ describe("GPU instancing", () => {
         v.update(true, false);
         expect(v.getInstancingStats().reason).toBe(null);
       }
-      v.setActiveTab("zebra");
-      v.update(true, false);
-      expect(v.getInstancingStats().reason).toBe("zebra");
-      v.setActiveTab("tree");
-      v.setExplode(true);
-      v.update(true, false);
-      expect(["expanded", "animation"]).toContain(
-        v.getInstancingStats().reason,
-      );
-      v.setExplode(false);
-      v.update(true, false);
-      expect(v.getInstancingStats().reason).toBe(null);
     } finally {
       cleanup(ctx);
     }

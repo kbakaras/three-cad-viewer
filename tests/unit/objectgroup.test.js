@@ -525,25 +525,6 @@ describe("ObjectGroup - setPolygonOffset", () => {
   });
 });
 
-describe("ObjectGroup - setZScale", () => {
-  test("sets z scale on meshes", () => {
-    const group = createObjectGroupWithMesh();
-    group.minZ = 0;
-    group.height = 10;
-
-    group.setZScale(2.0);
-
-    expect(group.front.scale.z).toBe(2.0);
-    expect(group.back.scale.z).toBe(2.0);
-  });
-
-  test("does nothing when no front/back/edges", () => {
-    const group = createObjectGroupWithVertices();
-
-    expect(() => group.setZScale(2.0)).not.toThrow();
-  });
-});
-
 describe("ObjectGroup - updateMaterials", () => {
   test("marks all materials as needing update", () => {
     const group = createObjectGroupWithMesh();
@@ -794,98 +775,15 @@ describe("ObjectGroup - metrics", () => {
   });
 });
 
-describe("ObjectGroup - zebra lazy getter", () => {
-  test("creates zebra tool on first access", () => {
-    const group = createObjectGroupWithMesh();
-
-    expect(group._zebra).toBeNull();
-
-    const zebra = group.zebra;
-
-    expect(zebra).toBeDefined();
-    expect(group._zebra).toBe(zebra);
-  });
-
-  test("returns same instance on subsequent access", () => {
-    const group = createObjectGroupWithMesh();
-
-    const zebra1 = group.zebra;
-    const zebra2 = group.zebra;
-
-    expect(zebra1).toBe(zebra2);
-  });
-});
-
-describe("ObjectGroup - setZebra", () => {
-  test("enables zebra on front mesh", () => {
-    const group = createObjectGroupWithMesh();
-
-    // Should not throw
-    expect(() => group.setZebra(true)).not.toThrow();
-  });
-
-  test("disables zebra on front mesh", () => {
-    const group = createObjectGroupWithMesh();
-
-    group.setZebra(true);
-    expect(() => group.setZebra(false)).not.toThrow();
-  });
-
-  test("does nothing when no front mesh", () => {
-    const group = createObjectGroupWithEdges();
-
-    expect(() => group.setZebra(true)).not.toThrow();
-  });
-});
-
-describe("ObjectGroup - zebra settings", () => {
-  test("setZebraCount calls zebra tool", () => {
-    const group = createObjectGroupWithMesh();
-
-    expect(() => group.setZebraCount(20)).not.toThrow();
-  });
-
-  test("setZebraOpacity calls zebra tool", () => {
-    const group = createObjectGroupWithMesh();
-
-    expect(() => group.setZebraOpacity(0.5)).not.toThrow();
-  });
-
-  test("setZebraDirection calls zebra tool", () => {
-    const group = createObjectGroupWithMesh();
-
-    expect(() => group.setZebraDirection(45)).not.toThrow();
-  });
-
-  test("setZebraColorScheme calls zebra tool", () => {
-    const group = createObjectGroupWithMesh();
-
-    expect(() => group.setZebraColorScheme("colorful")).not.toThrow();
-  });
-
-  test("setZebraMappingMode calls zebra tool", () => {
-    const group = createObjectGroupWithMesh();
-
-    expect(() => group.setZebraMappingMode("normal")).not.toThrow();
-  });
-});
-
 describe("ObjectGroup - dispose", () => {
   test("disposes all resources", () => {
     const group = createObjectGroupWithMesh();
-
-    // Initialize zebra
-    const zebra = group.zebra;
-
-    group.dispose();
-
-    expect(group._zebra).toBeNull();
-    // shapeGeometry is set to null by dispose if it existed
+    expect(() => group.dispose()).not.toThrow();
   });
 
-  test("handles dispose when zebra not initialized", () => {
+  test("handles repeated disposal", () => {
     const group = createObjectGroupWithMesh();
-
+    group.dispose();
     expect(() => group.dispose()).not.toThrow();
   });
 

@@ -156,8 +156,6 @@ describe("viewer keyboard shortcuts", () => {
     ["KeyG", "п", true, "gridxy"],
     ["KeyI", "ш", false, "isolateSelection"],
     ["Digit5", "(", false, "iso"],
-    ["Space", " ", false, "play"],
-    ["Escape", "Escape", false, "stop"],
   ])("dispatches %s / %s with Shift=%s", (code, key, shiftKey, action) => {
     expect(press({ code, key, shiftKey }).defaultPrevented).toBe(true);
     expect(dispatch).toHaveBeenCalledExactlyOnceWith(action);

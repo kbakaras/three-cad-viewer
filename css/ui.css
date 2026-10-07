@@ -95,14 +95,6 @@ input[type="radio"] {
   background-image: var(--tcv-icon-perspective);
 }
 
-.tcv_button_explode {
-  background-image: var(--tcv-icon-explode);
-}
-
-.tcv_button_zscale {
-  background-image: var(--tcv-icon-zscale);
-}
-
 .tcv_button_distance {
   background-image: var(--tcv-icon-distance);
 }
@@ -436,55 +428,9 @@ th {
   z-index: 100;
 }
 
-.tcv_animation_label {
-  vertical-align: middle;
-  margin-left: 5px;
-}
-
 .tcv_tools_label {
   vertical-align: middle;
   margin-left: 5px;
-}
-
-.tcv_animation_slider {
-  width: 120px !important;
-}
-
-.tcv_zscale_slider {
-  width: 120px !important;
-}
-
-.tcv_cad_animation {
-  height: 36px;
-  background-color: var(--tcv-bg-overlay-rest-color);
-  border: none;
-  margin: 0;
-  padding: 0px;
-  position: absolute;
-  right: 0px;
-  bottom: 0px;
-  z-index: 100;
-}
-
-.tcv_cad_animation:hover {
-  background-color: var(--tcv-bg-overlay-color);
-}
-
-.tcv_cad_zscale {
-  height: 36px;
-  background-color: var(--tcv-bg-overlay-rest-color);
-  border: none;
-  margin: 0;
-  padding: 0px;
-  position: absolute;
-  right: 0px;
-  bottom: 0px;
-  z-index: 100;
-  align-content: center;
-}
-
-.tcv_cad_zscale:hover {
-  background-color: var(--tcv-bg-overlay-color);
 }
 
 .tcv_cad_tools {
@@ -796,7 +742,6 @@ input[type="button"] {
 
 .tcv_cad_clip_container,
 .tcv_cad_material_container,
-.tcv_cad_zebra_container,
 .tcv_cad_studio_container {
   overflow: hidden;
   padding: 0 4px;
@@ -804,17 +749,11 @@ input[type="button"] {
 
 .tcv_cad_clip_container .tcv_label,
 .tcv_cad_material_container .tcv_label,
-.tcv_cad_zebra_container .tcv_label,
 .tcv_cad_studio_container .tcv_label {
   margin-left: 0;
   margin-right: 0;
 }
 
-
-.tcv_zebra_radio {
-  margin-bottom: var(--tcv-ui-row-gap);
-  margin-left: -3px;
-}
 
 .tcv_clip_checks {
   margin-top: var(--tcv-ui-row-gap);
@@ -954,10 +893,6 @@ input[type="button"] {
 }
 
 .tcv_material_info {
-  font-size: 12px;
-}
-
-.tcv_zebra_info {
   font-size: 12px;
 }
 

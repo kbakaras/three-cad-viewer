@@ -24,7 +24,6 @@ import { TreeView } from "../ui/treeview.js";
 // TreeData and StateValue available if needed for tree manipulation
 import { Timer } from "../utils/timer.js";
 import { Clipping } from "../scene/clipping.js";
-import { Animation } from "../scene/animation.js";
 import {
   isEqual,
   KeyMapper,
@@ -65,8 +64,6 @@ import type { Display } from "../ui/display.js";
 import type { Vector3Tuple, QuaternionTuple } from "three";
 import {
   CollapseState,
-  type ZebraColorScheme,
-  type ZebraMappingMode,
   type StudioToneMapping,
   type StudioTextureMapping,
   type StudioBackground,
@@ -77,7 +74,6 @@ import {
   type VisibilityState,
   type StateChange,
   type ActiveTab,
-  type Axis,
   type ClipIndex,
   type ThemeInput,
   type BoundingBoxFlat,
@@ -234,9 +230,6 @@ interface DisplayOptionsInternal {
   measureTools?: boolean;
   measurementDebug?: boolean;
   selectTool?: boolean;
-  explodeTool?: boolean;
-  zscaleTool?: boolean;
-  zebraTool?: boolean;
   glass?: boolean;
   tools?: boolean;
   canvas?: HTMLCanvasElement;
@@ -283,7 +276,6 @@ interface RenderedState {
  * - Scene graph with CAD objects (NestedGroup/ObjectGroup)
  * - Clipping planes
  * - Material settings
- * - Animation playback
  * - Object picking and selection
  *
  * ## Lifecycle
@@ -347,7 +339,6 @@ class Viewer {
   onAfterRender: (() => void) | null;
   mouse!: THREE.Vector2;
   cadTools!: Tools;
-  animation!: Animation;
   clipNormals!: [THREE.Vector3, THREE.Vector3, THREE.Vector3];
 
   // Render-time state: created in render(), cleared in clear()
@@ -388,9 +379,7 @@ class Viewer {
 
   // Animation
   hasAnimationLoop: boolean;
-  mixer: THREE.AnimationMixer | null;
   continueAnimation: boolean;
-  clipAction: THREE.AnimationAction | null;
 
   // Shape rendering
   shapeRenderer: ShapeRenderer | null;
@@ -427,9 +416,6 @@ class Viewer {
   get envManager() {
     return this._studioManager.envManager;
   }
-  // Z-scale
-  zScale!: number;
-
   // Deprecated properties (kept for compatibility)
   clipNormal0: Vector3Tuple | null;
   clipNormal1: Vector3Tuple | null;
@@ -515,9 +501,6 @@ class Viewer {
     this.cadTools = new Tools(this, options.measurementDebug ?? false);
 
     this.ready = false;
-    this.mixer = null;
-    this.clipAction = null;
-    this.animation = new Animation("|");
     this.continueAnimation = true;
     this.shapeRenderer = null;
     this.materialSettings = null;
@@ -718,161 +701,6 @@ class Viewer {
   }
 
   // ---------------------------------------------------------------------------
-  // Animation Control
-  // ---------------------------------------------------------------------------
-
-  /**
-   * Add a position animation track (full 3D translation).
-   * @param selector - path/id of group to be animated.
-   * @param times - array of keyframe times.
-   * @param positions - array of [x, y, z] position offsets.
-   */
-  addPositionTrack(
-    selector: string,
-    times: number[],
-    positions: number[][],
-  ): void {
-    this.animation.addPositionTrack(
-      selector,
-      this.rendered.nestedGroup.groups[selector],
-      times,
-      positions,
-    );
-  }
-
-  /**
-   * Add a single-axis translation animation track.
-   * @param selector - path/id of group to be animated.
-   * @param axis - which axis to translate along ("x", "y", or "z").
-   * @param times - array of keyframe times.
-   * @param values - array of translation values along the axis.
-   */
-  addTranslationTrack(
-    selector: string,
-    axis: Axis,
-    times: number[],
-    values: number[],
-  ): void {
-    this.animation.addTranslationTrack(
-      selector,
-      this.rendered.nestedGroup.groups[selector],
-      axis,
-      times,
-      values,
-    );
-  }
-
-  /**
-   * Add a quaternion rotation animation track.
-   * @param selector - path/id of group to be animated.
-   * @param times - array of keyframe times.
-   * @param quaternions - array of [x, y, z, w] quaternion values.
-   */
-  addQuaternionTrack(
-    selector: string,
-    times: number[],
-    quaternions: number[][],
-  ): void {
-    this.animation.addQuaternionTrack(
-      selector,
-      this.rendered.nestedGroup.groups[selector],
-      times,
-      quaternions,
-    );
-  }
-
-  /**
-   * Add a single-axis rotation animation track.
-   * @param selector - path/id of group to be animated.
-   * @param axis - which axis to rotate around ("x", "y", or "z").
-   * @param times - array of keyframe times.
-   * @param angles - array of rotation angles in degrees.
-   */
-  addRotationTrack(
-    selector: string,
-    axis: Axis,
-    times: number[],
-    angles: number[],
-  ): void {
-    this.animation.addRotationTrack(
-      selector,
-      this.rendered.nestedGroup.groups[selector],
-      axis,
-      times,
-      angles,
-    );
-  }
-
-  /**
-   * Initialize the animation.
-   * @param duration - overall duration of the animation.
-   * @param speed - speed of the animation.
-   * @param label - animation label.
-   * @param repeat - whether to repeat the animation.
-   */
-  initAnimation(
-    duration: number,
-    speed: number,
-    label: string = "A",
-    repeat: boolean = true,
-  ): void {
-    if (this.animation == null || this.animation.tracks.length === 0) {
-      logger.error("Animation does not have tracks");
-      return;
-    }
-    logger.debug("Animation initialized");
-    if (!this.hasAnimationLoop) {
-      this.toggleAnimationLoop(true);
-    }
-
-    this.state.set("animationMode", label === "E" ? "explode" : "animation");
-    this.clipAction = this.animation.animate(
-      this.rendered.nestedGroup.rootGroup!,
-      duration,
-      speed,
-      repeat,
-    );
-    // Reset animation slider to start
-    this.state.set("animationSliderValue", 0);
-  }
-
-  /**
-   * Check whether animation object exists
-   */
-  hasAnimation(): boolean {
-    return !!this.animation.clipAction;
-  }
-
-  /**
-   * Clear the animation object and dispose dependent objects
-   */
-  clearAnimation(): void {
-    if (this.animation) {
-      deepDispose(this.animation);
-    }
-    this.state.set("animationMode", "none");
-    this.toggleAnimationLoop(false);
-  }
-
-  /**
-   * Set the animation to a specific relative time (0-1).
-   * Pauses the animation at that point.
-   * @param fraction - relative time between 0 and 1.
-   */
-  setRelativeTime(fraction: number): void {
-    this.animation.setRelativeTime(fraction);
-    this.state.set("animationSliderValue", fraction * 1000);
-  }
-
-  /**
-   * Get the current relative animation time (0-1).
-   * @returns relative time between 0 and 1.
-   */
-  getRelativeTime(): number {
-    return this.animation.getRelativeTime();
-  }
-
-  // ---------------------------------------------------------------------------
   // Render Loop & Scene Updates
   // ---------------------------------------------------------------------------
 
@@ -934,7 +762,7 @@ class Viewer {
     // been created yet, so a fall-through to renderer.render() would paint
     // the scene with CAD materials (Studio's material swap is also async).
     // Without this guard, any setter that calls update() — setCameraZoom,
-    // setView, setExplode, setTool, etc. — would paint a CAD-materials
+    // setView, setTool, etc. — would paint a CAD-materials
     // frame before Studio's first proper paint, which is visible as a
     // 0.5–1 sec CAD render before Studio takes over. Studio's tab
     // handler does its own update() at completion, which is when the
@@ -1047,10 +875,6 @@ class Viewer {
       this.rendered.orientationMarker.render(this.renderer);
     }
 
-    if (this.animation) {
-      this.animation.update();
-    }
-
     this.checkChanges(
       {
         zoom: this.rendered.camera.getZoom(),
@@ -1150,7 +974,6 @@ class Viewer {
     this.materialSettings = null;
     this.compactTree = null;
     deepDispose(this.cadTools);
-    this.clipAction = null;
     this.lastNotification = {};
     this.clipNormal0 = null;
     this.clipNormal1 = null;
@@ -1195,17 +1018,6 @@ class Viewer {
       console.debug("three-cad-viewer: Change listener removed");
 
       this.hasAnimationLoop = false;
-      this.state.set("animationMode", "none");
-
-      if (this.animation != null) {
-        deepDispose(this.animation);
-      }
-
-      // Reset zscale state
-      if (this.shapes?.format === "GDS") {
-        this.state.set("zscaleActive", false);
-      }
-
       // Reset to tree tab for next render.
       // IMPORTANT: This fires the activeTab subscription synchronously,
       // which calls switchToTab("tree", oldTab). If oldTab was "studio",
@@ -1308,13 +1120,7 @@ class Viewer {
     else if (this.renderer.localClippingEnabled) reason = "clipping";
     else if (this.state.get("transparent")) reason = "transparent";
     else if (this.state.get("activeTool") != null) reason = "tool";
-    else if (this.state.get("activeTab") === "zebra") reason = "zebra";
     else if (nestedGroup !== this.compactNestedGroup) reason = "expanded";
-    else if (
-      this.state.get("animationMode") !== "none" ||
-      this.animation.hasTracks()
-    )
-      reason = "animation";
     else if (this.state.get("normalLen") > 0) reason = "normals";
     const draw = (): void => {
       this.renderer.render(scene, camera.getCamera());
@@ -1720,7 +1526,7 @@ class Viewer {
 
   /**
    * Set the active sidebar tab.
-   * @param tabName - Tab name: "tree", "clip", "material", "zebra", or "studio"
+   * @param tabName - Tab name: "tree", "clip", "material", or "studio"
    * @param notify - whether to send notification or not.
    */
   setActiveTab(tabName: ActiveTab, notify: boolean = true): void {
@@ -1797,7 +1603,6 @@ class Viewer {
       this.state.updateStudioState((shapes as any).studioOptions);
     }
 
-    this.animation.cleanBackup();
 
     const timer = new Timer("viewer", this.state.get("timeit"));
 
@@ -1838,22 +1643,18 @@ class Viewer {
     // build mouse/touch controls
     //
     const controls = new Controls(
-      this.state.get("control"),
       camera.getCamera(),
       new THREE.Vector3(...(viewerOptions.target ?? this.bbox.center())),
       this.renderer.domElement,
       this.state.get("rotateSpeed"),
       this.state.get("zoomSpeed"),
       this.state.get("panSpeed"),
-      this.state.get("holroyd"),
     );
     // Disable keyboard controls (these properties exist on THREE.js controls internally)
     controls.controls.enableKeys = false;
 
     // ensure panning works for screen coordinates (only exists on OrbitControls)
-    if ("screenSpacePanning" in controls.controls) {
-      controls.controls.screenSpacePanning = true;
-    }
+    controls.controls.screenSpacePanning = true;
 
     //
     // add lights
@@ -2115,7 +1916,7 @@ class Viewer {
     this.setClipObjectColorCaps(viewerOptions.clipObjectColors ?? false, true);
     this.setClipPlaneHelpers(viewerOptions.clipPlaneHelpers ?? false, true);
 
-    this.display.showReadyMessage(version, this.state.get("control"));
+    this.display.showReadyMessage(version);
     timer.split("show done");
 
     // Notify computed values and all config defaults
@@ -2152,7 +1953,7 @@ class Viewer {
       this.update(true, false);
     } else {
       // setActiveTab fires the subscription synchronously; switchToTab
-      // either paints (clip / zebra / material) or initiates Studio's
+      // either paints (clip / material) or initiates Studio's
       // async load (showing the spinner). The first painted frame the
       // user sees is the target tab, not CAD.
       this.setActiveTab(targetTab);
@@ -2160,11 +1961,6 @@ class Viewer {
     treeview.update();
     this.display.setTheme(this.state.get("theme"));
 
-    this.setZebraCount(this.state.get("zebraCount"));
-    this.setZebraDirection(this.state.get("zebraDirection"));
-    this.setZebraOpacity(this.state.get("zebraOpacity"));
-    this.setZebraColorScheme(this.state.get("zebraColorScheme"));
-    this.setZebraMappingMode(this.state.get("zebraMappingMode"));
 
     timer.split("update done");
     timer.stop();
@@ -2461,47 +2257,6 @@ class Viewer {
   };
 
   /**
-   * Backup animation (for switch to explode animation)
-   */
-  backupAnimation(): void {
-    if (this.animation.hasTracks()) {
-      this.animation.backup();
-    }
-  }
-
-  /**
-   * Restore animation (for switch back from explode animation)
-   */
-  restoreAnimation(): void {
-    if (this.animation.hasBackup()) {
-      const params = this.animation.restore();
-      this.initAnimation(params.duration!, params.speed!, "A", params.repeat!);
-    }
-  }
-
-  /**
-   * Handler for the animation control
-   * @param btn - the pressed button as string: "play", "pause", "stop"
-   */
-  controlAnimation = (btn: string): void => {
-    if (!this.clipAction) return;
-    switch (btn) {
-      case "play":
-        if (this.clipAction.paused) {
-          this.clipAction.paused = false;
-        }
-        this.clipAction.play();
-        break;
-      case "pause":
-        this.clipAction.paused = !this.clipAction.paused;
-        break;
-      case "stop":
-        this.clipAction.stop();
-        break;
-    }
-  };
-
-  /**
    * Set state of one entry of a treeview leaf given by an id
    * @param id - object id
    * @param state - 2 dim array [mesh, edges] = [0/1, 0/1]
@@ -2575,10 +2330,6 @@ class Viewer {
           boundingSphere: boundingBox.boundingSphere(),
         },
       });
-
-      if (this.animation.clipAction?.isRunning()) {
-        this.bboxNeedsUpdate = true;
-      }
 
       if (shift && meta) {
         this.removeLastBbox();
@@ -3291,121 +3042,6 @@ class Viewer {
   };
 
   // ---------------------------------------------------------------------------
-  // Getters & Setters: Zebra Tool
-  // ---------------------------------------------------------------------------
-
-  enableZebraTool = (flag: boolean): void => {
-    this.rendered.nestedGroup.setZebra(flag);
-    this.update(true, true);
-    this.rendered.treeview.update();
-  };
-
-  /**
-   * Sets the stripe count value for the viewer and updates related components.
-   * @param value - The stripe count value to set.
-   */
-  setZebraCount = (value: number): void => {
-    value = Math.max(2, Math.min(50, value));
-    this.state.set("zebraCount", value);
-    this.rendered.nestedGroup.setZebraCount(value);
-    this.update(this.updateMarker);
-  };
-
-  /**
-   * Sets the stripe opacity value for the viewer and updates related components.
-   * @param value - The stripe opacity value to set.
-   */
-  setZebraOpacity = (value: number): void => {
-    value = Math.max(0, Math.min(1, value));
-    this.state.set("zebraOpacity", value);
-    this.rendered.nestedGroup.setZebraOpacity(value);
-    this.update(this.updateMarker);
-  };
-
-  /**
-   * Sets the stripe direction value for the viewer and updates related components.
-   * @param value - The stripe direction value to set.
-   */
-  setZebraDirection = (value: number): void => {
-    value = Math.max(0, Math.min(90, value));
-    this.state.set("zebraDirection", value);
-    this.rendered.nestedGroup.setZebraDirection(value);
-    this.update(this.updateMarker);
-  };
-
-  /**
-   * Sets the stripe color scheme for the viewer and updates related components.
-   * @param value - The color scheme ("blackwhite", "colorful", "grayscale").
-   */
-  setZebraColorScheme = (value: ZebraColorScheme): void => {
-    this.state.set("zebraColorScheme", value);
-    this.rendered.nestedGroup.setZebraColorScheme(value);
-    this.update(this.updateMarker);
-  };
-
-  /**
-   * Sets the stripe mapping mode for the viewer and updates related components.
-   * @param value - The mapping mode ("reflection", "normal").
-   */
-  setZebraMappingMode = (value: ZebraMappingMode): void => {
-    this.state.set("zebraMappingMode", value);
-    this.rendered.nestedGroup.setZebraMappingMode(value);
-    this.update(this.updateMarker);
-  };
-
-  /**
-   * Resets zebra tool settings to defaults: count=9, opacity=1, direction=0,
-   * colorScheme=blackwhite, mappingMode=reflection.
-   */
-  resetZebra = (): void => {
-    this.setZebraCount(9);
-    this.setZebraOpacity(1.0);
-    this.setZebraDirection(0);
-    this.setZebraColorScheme("blackwhite");
-    this.setZebraMappingMode("reflection");
-  };
-
-  /**
-   * Gets the current stripe count value.
-   * @returns The stripe count (2-50).
-   */
-  getZebraCount = (): number => {
-    return this.state.get("zebraCount");
-  };
-
-  /**
-   * Gets the current stripe opacity value.
-   * @returns The stripe opacity (0-1).
-   */
-  getZebraOpacity = (): number => {
-    return this.state.get("zebraOpacity");
-  };
-
-  /**
-   * Gets the current stripe direction value.
-   * @returns The stripe direction in degrees (0-90).
-   */
-  getZebraDirection = (): number => {
-    return this.state.get("zebraDirection");
-  };
-
-  /**
-   * Gets the current stripe color scheme.
-   * @returns The color scheme ("blackwhite", "colorful", "grayscale").
-   */
-  getZebraColorScheme = (): ZebraColorScheme => {
-    return this.state.get("zebraColorScheme");
-  };
-
-  /**
-   * Gets the current stripe mapping mode.
-   * @returns The mapping mode ("reflection", "normal").
-   */
-  getZebraMappingMode = (): ZebraMappingMode => {
-    return this.state.get("zebraMappingMode");
-  };
-
-  // ---------------------------------------------------------------------------
   // Getters & Setters: Studio Mode
   // ---------------------------------------------------------------------------
 
@@ -3767,16 +3403,6 @@ class Viewer {
   }
 
   /**
-   * Set zscaling value.
-   * @param value - scale factor.
-   */
-  setZscaleValue(value: number): void {
-    this.rendered.nestedGroup.setZScale(value);
-    this.zScale = value;
-    this.update(true);
-  }
-
-  /**
    * Get zoom value.
    * @returns zoom value.
    * @public
@@ -3906,16 +3532,12 @@ class Viewer {
 
   setCameraLocationSettings(
     position: Vector3Tuple | null = null,
-    quaternion: QuaternionTuple | null = null,
     target: Vector3Tuple | null = null,
     zoom: number | null = null,
     notify: boolean = true,
   ): void {
     if (position != null) {
       this.rendered.camera.setPosition(position, false);
-    }
-    if (quaternion != null && this.state.get("control") === "trackball") {
-      this.rendered.camera.setQuaternion(quaternion);
     }
     if (target != null) {
       this.rendered.controls.setTarget(new THREE.Vector3(...target));
@@ -4896,25 +4518,6 @@ class Viewer {
     this.rendered.controls.setRotateSpeed(val);
   };
 
-  /**
-   * Get holroyd (non-tumbling) trackball mode.
-   * @returns holroyd flag.
-   */
-  getHolroyd(): boolean {
-    return this.state.get("holroyd");
-  }
-
-  /**
-   * Set holroyd (non-tumbling) trackball mode.
-   * When false, uses standard Three.js TrackballControls behavior.
-   * @param flag - whether to enable holroyd mode.
-   * @param notify - whether to send notification or not.
-   */
-  setHolroyd = (flag: boolean, notify: boolean = true): void => {
-    this.state.set("holroyd", flag, notify);
-    this.rendered.controls.setHolroydTrackball(flag);
-  };
-
   // ---------------------------------------------------------------------------
   // Clipping Planes
   // ---------------------------------------------------------------------------
@@ -5201,111 +4804,6 @@ class Viewer {
     });
   };
 
-  // ---------------------------------------------------------------------------
-  // Explode Animation
-  // ---------------------------------------------------------------------------
-
-  /**
-   * Calculate explode trajectories and initiate the animation.
-   *
-   * @param duration - duration of animation.
-   * @param speed - speed of animation.
-   * @param multiplier - multiplier for length of trajectories.
-   * @public
-   */
-  explode(
-    duration: number = 2,
-    speed: number = 1,
-    multiplier: number = 2.5,
-  ): void {
-    this.clearAnimation();
-
-    const use_origin = this.getAxes0();
-
-    const worldCenterOrOrigin = new THREE.Vector3();
-    const worldObjectCenter = new THREE.Vector3();
-
-    let worldDirection: THREE.Vector3 | null = null;
-    let localDirection: THREE.Vector3 | null = null;
-    let scaledLocalDirection: THREE.Vector3 | null = null;
-
-    if (!use_origin) {
-      const bb = new THREE.Box3().setFromObject(
-        this.rendered.nestedGroup.rootGroup!,
-      );
-      bb.getCenter(worldCenterOrOrigin);
-    }
-    for (const id in this.rendered.nestedGroup.groups) {
-      // Loop over all Group elements
-      const group = this.rendered.nestedGroup.groups[id];
-
-      const b = new THREE.Box3();
-      if (group instanceof ObjectGroup) {
-        b.expandByObject(group);
-      }
-      if (b.isEmpty()) {
-        continue;
-      }
-      b.getCenter(worldObjectCenter);
-      // Explode around global center or origin
-      worldDirection = worldObjectCenter.sub(worldCenterOrOrigin);
-      localDirection = group.parent!.worldToLocal(worldDirection.clone());
-
-      // Use the parent to calculate the local directions
-      scaledLocalDirection = group.parent!.worldToLocal(
-        worldDirection.clone().multiplyScalar(multiplier),
-      );
-      // and ensure to shift objects at its center and not at its position
-      scaledLocalDirection.sub(localDirection);
-
-      // build an animation track for the group with this direction
-      this.addPositionTrack(
-        id,
-        [0, duration],
-        [[0, 0, 0], scaledLocalDirection.toArray()],
-      );
-    }
-    this.initAnimation(duration, speed, "E", false);
-  }
-
-  /**
-   * Toggle explode mode on/off.
-   * @param flag - whether to enable or disable explode mode
-   * @param notify - whether to send notification or not.
-   * @public
-   */
-  setExplode(flag: boolean, notify: boolean = true): void {
-    const isExplodeActive = this.state.get("animationMode") === "explode";
-    if (flag === isExplodeActive) return;
-
-    if (flag) {
-      // Mirror the UI button-group exclusivity: activating explode must
-      // deactivate any active measurement/selection tool. activateTool()
-      // already clears animationMode in the reverse direction; this makes
-      // the API path symmetric with a UI click. Goes through display.setTool
-      // so cadTools/raycaster/picker get fully cleaned up.
-      const currentTool = this.state.get("activeTool");
-      if (currentTool) {
-        this.display.setTool(currentTool, false);
-      }
-      if (this.hasAnimation()) {
-        this.backupAnimation();
-      }
-      this.explode(); // This sets animationMode to "explode" via initAnimation
-    } else {
-      if (this.hasAnimation()) {
-        this.controlAnimation("stop");
-        this.clearAnimation(); // This sets animationMode to "none"
-        this.restoreAnimation();
-      } else {
-        this.state.set("animationMode", "none");
-      }
-    }
-
-    // Send explode notification (client expects boolean, not animationMode)
-    this.checkChanges({ explode: flag }, notify);
-  }
-
   /**
    * Activate or deactivate a measurement/selection tool.
    * This is the single entry point for tool state changes - Display should call this
@@ -5314,32 +4812,10 @@ class Viewer {
    * @param flag - Whether to activate (true) or deactivate (false) the tool
    */
   activateTool(name: string, flag: boolean): void {
-    const currentTool = this.state.get("activeTool");
-
     if (flag) {
-      // Activating a tool implicitly turns off explode (animationMode → "none").
-      // Emit the explode=false notification so consumers don't keep a stale
-      // explode=true in their reported state — otherwise the next render that
-      // echoes back combined_config will set explode back on.
-      const wasExplode = this.state.get("animationMode") === "explode";
-      this.state.set("animationMode", "none");
-      if (this.hasAnimation()) {
-        this.backupAnimation();
-      }
       this.state.set("activeTool", name);
-      if (wasExplode) {
-        this.checkChanges({ explode: false });
-      }
-    } else {
-      // Deactivating a tool
-      if (currentTool === name || name === "explode") {
-        this.state.set("activeTool", null);
-      }
-      if (this.hasAnimation()) {
-        this.controlAnimation("stop");
-        this.clearAnimation();
-        this.restoreAnimation();
-      }
+    } else if (this.state.get("activeTool") === name) {
+      this.state.set("activeTool", null);
     }
   }
 
@@ -5450,7 +4926,6 @@ class Viewer {
 
     // Adapt camera to new dimensions
     this.rendered.camera.changeDimensions(this.bb_radius, cadWidth, height);
-    this.controls.handleResize();
 
     // Resize the post-processing composer (render targets must match viewport)
     this._studioManager.setSize(cadWidth, height);
@@ -5586,24 +5061,6 @@ class Viewer {
    */
   showSelectTool = (flag: boolean): void => {
     this.display.showSelectTool(flag);
-  };
-
-  /**
-   * Show/hide the explode tool.
-   * @param flag - whether to show the explode tool
-   * @public
-   */
-  showExplodeTool = (flag: boolean): void => {
-    this.display.showExplodeTool(flag);
-  };
-
-  /**
-   * Show/hide the z-scale tool.
-   * @param flag - whether to show the z-scale tool
-   * @public
-   */
-  showZScaleTool = (flag: boolean): void => {
-    this.display.showZScaleTool(flag);
   };
 
   /**

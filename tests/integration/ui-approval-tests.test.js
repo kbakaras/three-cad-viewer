@@ -239,50 +239,6 @@ describe("UI-Level Approval Tests - Display/Viewer Integration", () => {
   });
 
   // =====================================================================
-  // RENDERING MODE BUTTONS
-  // =====================================================================
-
-  describe("Rendering Mode Buttons", () => {
-    test("UI: toggle explode mode button", async () => {
-      testContext = setupViewer();
-      const { viewer, display, renderOptions, viewerOptions } = testContext;
-
-      const assemblyData = await loadExample("assembly");
-      viewer.render(assemblyData, renderOptions, {
-        ...viewerOptions,
-        explode: false,
-      });
-
-      // Initial state - compact mode
-      const compactState = captureSceneState(viewer);
-
-      // Click explode button to expand - ClickButton toggles state then calls action
-      // Note: explode functionality requires viewer.explode() method which may not be implemented
-      if (
-        display.clickButtons["explode"] &&
-        typeof viewer.explode === "function"
-      ) {
-        const explodeBtn = display.clickButtons["explode"];
-        explodeBtn.set(!explodeBtn.state);
-        explodeBtn.action(explodeBtn.name, explodeBtn.state);
-        const explodedState = captureSceneState(viewer);
-
-        // Scene structure should change
-        expect(explodedState).not.toEqual(compactState);
-
-        expect({ compactState, explodedState }).toMatchSnapshot(
-          "ui-explode-toggle",
-        );
-      } else {
-        // Skip test if explode not available - just create minimal snapshot
-        expect({ compactState, skipped: true }).toMatchSnapshot(
-          "ui-explode-toggle",
-        );
-      }
-    });
-  });
-
-  // =====================================================================
   // CLIPPING CONTROL BUTTONS
   // =====================================================================
 

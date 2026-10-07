@@ -601,91 +601,6 @@ describe("Viewer - Clipping", () => {
 });
 
 // =============================================================================
-// VIEWER ZEBRA TOOL TESTS
-// =============================================================================
-
-describe("Viewer - Zebra Tool", () => {
-  let testContext;
-
-  afterEach(() => {
-    if (testContext) {
-      cleanup(testContext);
-      testContext = null;
-    }
-  });
-
-  test("enableZebraTool enables/disables zebra mode", async () => {
-    testContext = setupViewer();
-    const { viewer, renderOptions, viewerOptions } = testContext;
-
-    const box1Data = await loadExample("box1");
-    viewer.render(box1Data, renderOptions, viewerOptions);
-
-    viewer.enableZebraTool(true);
-    // Should not throw
-
-    viewer.enableZebraTool(false);
-    // Should not throw
-  });
-
-  test("setZebraCount updates zebra count", async () => {
-    testContext = setupViewer();
-    const { viewer, renderOptions, viewerOptions } = testContext;
-
-    const box1Data = await loadExample("box1");
-    viewer.render(box1Data, renderOptions, viewerOptions);
-
-    viewer.setZebraCount(30);
-    expect(viewer.state.get("zebraCount")).toBe(30);
-  });
-
-  test("setZebraOpacity updates zebra opacity", async () => {
-    testContext = setupViewer();
-    const { viewer, renderOptions, viewerOptions } = testContext;
-
-    const box1Data = await loadExample("box1");
-    viewer.render(box1Data, renderOptions, viewerOptions);
-
-    viewer.setZebraOpacity(0.7);
-    expect(viewer.state.get("zebraOpacity")).toBe(0.7);
-  });
-
-  test("setZebraDirection updates zebra direction", async () => {
-    testContext = setupViewer();
-    const { viewer, renderOptions, viewerOptions } = testContext;
-
-    const box1Data = await loadExample("box1");
-    viewer.render(box1Data, renderOptions, viewerOptions);
-
-    viewer.setZebraDirection(90);
-    expect(viewer.state.get("zebraDirection")).toBe(90);
-  });
-
-  test("setZebraColorScheme updates zebra color scheme", async () => {
-    testContext = setupViewer();
-    const { viewer, renderOptions, viewerOptions } = testContext;
-
-    const box1Data = await loadExample("box1");
-    viewer.render(box1Data, renderOptions, viewerOptions);
-
-    viewer.setZebraColorScheme("colorful");
-    expect(viewer.state.get("zebraColorScheme")).toBe("colorful");
-  });
-
-  test("setZebraMappingMode updates zebra mapping mode", async () => {
-    testContext = setupViewer();
-    const { viewer, renderOptions, viewerOptions } = testContext;
-
-    const box1Data = await loadExample("box1");
-    viewer.render(box1Data, renderOptions, viewerOptions);
-
-    viewer.setZebraMappingMode("normal");
-    expect(viewer.state.get("zebraMappingMode")).toBe("normal");
-  });
-});
-
-// =============================================================================
-// VIEWER SELECTION TESTS
 // =============================================================================
 
 describe("Viewer - Selection", () => {
@@ -835,54 +750,6 @@ describe("Viewer - Display Options", () => {
 
 // =============================================================================
 // VIEWER ANIMATION TESTS
-// =============================================================================
-
-describe("Viewer - Animation", () => {
-  let testContext;
-
-  afterEach(() => {
-    if (testContext) {
-      cleanup(testContext);
-      testContext = null;
-    }
-  });
-
-  test("setExplode toggles explode mode", async () => {
-    testContext = setupViewer();
-    const { viewer, renderOptions, viewerOptions } = testContext;
-
-    const box1Data = await loadExample("box1");
-    viewer.render(box1Data, renderOptions, viewerOptions);
-
-    // Enable explode
-    viewer.setExplode(true);
-    expect(viewer.state.get("animationMode")).toBe("explode");
-
-    // Disable explode
-    viewer.setExplode(false);
-    expect(viewer.state.get("animationMode")).toBe("none");
-  });
-
-  test("controlAnimation handles play/pause/stop", async () => {
-    testContext = setupViewer();
-    const { viewer, renderOptions, viewerOptions } = testContext;
-
-    const box1Data = await loadExample("box1");
-    viewer.render(box1Data, renderOptions, viewerOptions);
-
-    // Enable explode first to have animation
-    viewer.setExplode(true);
-
-    // Test control commands
-    viewer.controlAnimation("play");
-    viewer.controlAnimation("pause");
-    viewer.controlAnimation("stop");
-    // Should not throw
-  });
-});
-
-// =============================================================================
-// VIEWER UPDATE/RENDER TESTS
 // =============================================================================
 
 describe("Viewer - Update & Render", () => {
@@ -1447,45 +1314,6 @@ describe("Viewer - Utility Methods", () => {
 
 // =============================================================================
 // VIEWER ANIMATION METHODS
-// =============================================================================
-
-describe("Viewer - Animation Methods (Extended)", () => {
-  let testContext;
-
-  afterEach(() => {
-    if (testContext) {
-      cleanup(testContext);
-      testContext = null;
-    }
-  });
-
-  test("backupAnimation stores animation state", async () => {
-    testContext = setupViewer();
-    const { viewer, renderOptions, viewerOptions } = testContext;
-
-    const box1Data = await loadExample("box1");
-    viewer.render(box1Data, renderOptions, viewerOptions);
-
-    // This calls animation.backup()
-    viewer.backupAnimation();
-    // Should not throw
-  });
-
-  test("setZscaleValue updates z scale", async () => {
-    testContext = setupViewer();
-    const { viewer, renderOptions, viewerOptions } = testContext;
-
-    const box1Data = await loadExample("box1");
-    viewer.render(box1Data, renderOptions, viewerOptions);
-
-    // setZscaleValue calls nestedGroup.setZScale internally
-    // Just verify it can be called without throwing
-    viewer.setZscaleValue(2.0);
-  });
-});
-
-// =============================================================================
-// VIEWER RAYCAST METHODS
 // =============================================================================
 
 describe("Viewer - Raycast Methods", () => {

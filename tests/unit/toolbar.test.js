@@ -39,7 +39,6 @@ describe("Toolbar - Constructor", () => {
     const features = {
       measureTools: true,
       selectTool: true,
-      explodeTool: true,
     };
 
     const toolbar = new Toolbar(container, "test-toolbar", {
@@ -247,7 +246,7 @@ describe("Toolbar - minimize/maximize", () => {
     toolbar = new Toolbar(container, "test", {
       getVisibleWidth: () => 800,
       getWidthThreshold: () => 600,
-      features: { measureTools: true, selectTool: true, explodeTool: true },
+      features: { measureTools: true, selectTool: true },
     });
   });
 
@@ -303,7 +302,6 @@ describe("Toolbar - minimize/maximize", () => {
     toolbar.features = {
       measureTools: false,
       selectTool: false,
-      explodeTool: false,
     };
 
     const distanceBtn = new Button("light", "distance", "Distance", vi.fn());
@@ -314,13 +312,11 @@ describe("Toolbar - minimize/maximize", () => {
       vi.fn(),
     );
     const selectBtn = new Button("light", "select", "Select", vi.fn());
-    const explodeBtn = new Button("light", "explode", "Explode", vi.fn());
     const regularBtn = new Button("light", "regular", "Regular", vi.fn());
 
     toolbar.addButton(distanceBtn, 0);
     toolbar.addButton(propertiesBtn, 0);
     toolbar.addButton(selectBtn, 0);
-    toolbar.addButton(explodeBtn, 0);
     toolbar.addButton(regularBtn, 0);
 
     toolbar.minimize();
@@ -329,7 +325,6 @@ describe("Toolbar - minimize/maximize", () => {
     expect(distanceBtn.html.style.display).toBe("none");
     expect(propertiesBtn.html.style.display).toBe("none");
     expect(selectBtn.html.style.display).toBe("none");
-    expect(explodeBtn.html.style.display).toBe("none");
     // Regular button should be hidden due to minimize
     expect(regularBtn.html.style.display).toBe("none");
   });

@@ -75,7 +75,7 @@ try {
       ortho: window.viewer.getOrtho(),
     }));
     const copied = {};
-    for (const key of ["position", "quaternion", "target"]) {
+    for (const key of ["position", "target"]) {
       copied[key] = text
         .match(new RegExp(`${key}=\\(([^)]+)\\)`))[1]
         .split(",")
@@ -96,14 +96,13 @@ try {
     window.viewer.setOrtho(false);
     window.viewer.setCameraLocationSettings(
       camera.position,
-      camera.quaternion,
       camera.target,
       camera.zoom,
     );
   }, original);
   await page.waitForTimeout(300);
   const restored = await assertCamera();
-  for (const key of ["position", "quaternion", "target"])
+  for (const key of ["position", "target"])
     restored[key].forEach((n, i) =>
       assert.ok(Math.abs(n - original[key][i]) < 1e-5),
     );

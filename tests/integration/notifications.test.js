@@ -1531,112 +1531,6 @@ describe("Collapse State Notifications", () => {
 // EXPLODE NOTIFICATION TESTS
 // =============================================================================
 
-describe("Explode Notifications", () => {
-  let testContext;
-  let collector;
-
-  beforeEach(() => {
-    collector = createNotificationCollector();
-  });
-
-  afterEach(() => {
-    if (testContext) {
-      cleanup(testContext);
-      testContext = null;
-    }
-  });
-
-  test("setExplode sends explode notification", async () => {
-    testContext = setupViewer({
-      notifyCallback: collector.callback,
-      explodeTool: true,
-    });
-    const { viewer, renderOptions, viewerOptions } = testContext;
-
-    const box1Data = await loadExample("box1");
-    viewer.render(box1Data, renderOptions, viewerOptions);
-    collector.notifications.length = 0;
-
-    viewer.setExplode(true);
-
-    const notification = getLastNotificationWithKey(
-      collector.notifications,
-      "explode",
-    );
-    expect(notification).toBeDefined();
-    expect(notification.explode.new).toBe(true);
-  });
-
-  test("setExplode false sends explode notification", async () => {
-    testContext = setupViewer({
-      notifyCallback: collector.callback,
-      explodeTool: true,
-    });
-    const { viewer, renderOptions, viewerOptions } = testContext;
-
-    const box1Data = await loadExample("box1");
-    viewer.render(box1Data, renderOptions, viewerOptions);
-
-    // First enable explode
-    viewer.setExplode(true);
-    collector.notifications.length = 0;
-
-    // Then disable it
-    viewer.setExplode(false);
-
-    const notification = getLastNotificationWithKey(
-      collector.notifications,
-      "explode",
-    );
-    expect(notification).toBeDefined();
-    expect(notification.explode.new).toBe(false);
-  });
-
-  test("setExplode with notify=false does not send notification", async () => {
-    testContext = setupViewer({
-      notifyCallback: collector.callback,
-      explodeTool: true,
-    });
-    const { viewer, renderOptions, viewerOptions } = testContext;
-
-    const box1Data = await loadExample("box1");
-    viewer.render(box1Data, renderOptions, viewerOptions);
-    collector.notifications.length = 0;
-
-    viewer.setExplode(true, false);
-
-    expect(
-      getLastNotificationWithKey(collector.notifications, "explode"),
-    ).toBeNull();
-  });
-
-  test("setExplode does not send duplicate notification for same value", async () => {
-    testContext = setupViewer({
-      notifyCallback: collector.callback,
-      explodeTool: true,
-    });
-    const { viewer, renderOptions, viewerOptions } = testContext;
-
-    const box1Data = await loadExample("box1");
-    viewer.render(box1Data, renderOptions, viewerOptions);
-
-    viewer.setExplode(true);
-    collector.notifications.length = 0;
-
-    // Set same value again
-    viewer.setExplode(true);
-
-    // Should not send notification for same value
-    expect(
-      getLastNotificationWithKey(collector.notifications, "explode"),
-    ).toBeNull();
-  });
-});
-
-// =============================================================================
-// TAB SWITCHING NOTIFICATION TESTS
-// =============================================================================
-
 describe("Tab Switching Notifications", () => {
   let testContext;
   let collector;
@@ -1710,7 +1604,6 @@ describe("Tab Switching Notifications", () => {
   test("all tab values can be set", async () => {
     testContext = setupViewer({
       notifyCallback: collector.callback,
-      zebraTool: true,
     });
     const { viewer, renderOptions, viewerOptions } = testContext;
 
@@ -2141,48 +2034,6 @@ describe("Select Tool Notifications", () => {
 // ANIMATION MODE NOTIFICATION TESTS
 // =============================================================================
 
-describe("Animation Mode Notifications", () => {
-  let testContext;
-  let collector;
-
-  beforeEach(() => {
-    collector = createNotificationCollector();
-  });
-
-  afterEach(() => {
-    if (testContext) {
-      cleanup(testContext);
-      testContext = null;
-    }
-  });
-
-  test("explode triggers animation mode change", async () => {
-    testContext = setupViewer({
-      notifyCallback: collector.callback,
-      explodeTool: true,
-    });
-    const { viewer, renderOptions, viewerOptions } = testContext;
-
-    const box1Data = await loadExample("box1");
-    viewer.render(box1Data, renderOptions, viewerOptions);
-    collector.notifications.length = 0;
-
-    // Explode changes animation mode internally
-    viewer.setExplode(true);
-
-    // Should have explode notification
-    const notification = getLastNotificationWithKey(
-      collector.notifications,
-      "explode",
-    );
-    expect(notification).toBeDefined();
-  });
-});
-
-// =============================================================================
-// CAMERA LOCATION NOTIFICATION TESTS
-// =============================================================================
-
 describe("Camera Location Notifications", () => {
   let testContext;
   let collector;
@@ -2313,76 +2164,6 @@ describe("Camera Location Notifications", () => {
 });
 
 // =============================================================================
-// HOLROYD NOTIFICATION TESTS
-// =============================================================================
-
-describe("Holroyd Notifications", () => {
-  let testContext;
-  let collector;
-
-  beforeEach(() => {
-    collector = createNotificationCollector();
-  });
-
-  afterEach(() => {
-    if (testContext) {
-      cleanup(testContext);
-      testContext = null;
-    }
-  });
-
-  test("setHolroyd sends holroyd notification (trackball controls)", async () => {
-    testContext = setupViewer({ notifyCallback: collector.callback });
-    const { viewer, renderOptions, viewerOptions } = testContext;
-
-    const box1Data = await loadExample("box1");
-    // Use trackball controls for holroyd test
-    viewer.render(box1Data, renderOptions, {
-      ...viewerOptions,
-      control: "trackball",
-    });
-
-    // holroyd defaults to true, so first set to false
-    viewer.setHolroyd(false);
-    collector.notifications.length = 0;
-
-    // Now set back to true
-    viewer.setHolroyd(true);
-
-    const notification = getLastNotificationWithKey(
-      collector.notifications,
-      "holroyd",
-    );
-    expect(notification).toBeDefined();
-    expect(notification.holroyd.new).toBe(true);
-  });
-
-  test("setHolroyd with notify=false does not send notification", async () => {
-    testContext = setupViewer({ notifyCallback: collector.callback });
-    const { viewer, renderOptions, viewerOptions } = testContext;
-
-    const box1Data = await loadExample("box1");
-    // Use trackball controls for holroyd test
-    viewer.render(box1Data, renderOptions, {
-      ...viewerOptions,
-      control: "trackball",
-    });
-
-    // holroyd defaults to true, so first set to false
-    viewer.setHolroyd(false);
-    collector.notifications.length = 0;
-
-    // Set back to true with notify=false
-    viewer.setHolroyd(true, false);
-
-    expect(
-      getLastNotificationWithKey(collector.notifications, "holroyd"),
-    ).toBeNull();
-  });
-});
-
-// =============================================================================
-// NOTIFICATION TIMING AND ORDER TESTS
 // =============================================================================
 
 describe("Notification Timing and Order", () => {

@@ -41,27 +41,6 @@ declare module "three/examples/jsm/controls/OrbitControls.js" {
   }
 }
 
-declare module "three/examples/jsm/controls/TrackballControls.js" {
-  interface TrackballControls {
-    /**
-     * Enable/disable keyboard controls
-     */
-    enableKeys: boolean;
-    /**
-     * Internal: rotate camera based on mouse movement
-     */
-    _rotateCamera(): void;
-    /**
-     * Internal: pan camera based on mouse movement
-     */
-    _panCamera(): void;
-    /**
-     * Internal: zoom camera based on mouse movement
-     */
-    _zoomCamera(): void;
-  }
-}
-
 declare module "three/examples/jsm/lines/LineMaterial.js" {
   interface LineMaterial {
     /**

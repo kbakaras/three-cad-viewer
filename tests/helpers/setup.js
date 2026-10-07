@@ -41,9 +41,6 @@ export function getDisplayOptions() {
     // Feature flags - ALL TRUE for testing all code paths
     measureTools: true,
     selectTool: true,
-    explodeTool: true, // Enable for testing
-    zscaleTool: true, // Enable for testing
-    zebraTool: true, // Enable for testing (used by Display)
     measurementDebug: true, // Enable to mock Python backend
   };
 }

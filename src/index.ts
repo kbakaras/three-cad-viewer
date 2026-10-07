@@ -66,12 +66,8 @@ export type { Vector3Tuple, QuaternionTuple } from "three";
 export type {
   ThemeInput,
   Theme,
-  ControlType,
   UpDirection,
-  AnimationMode,
   ActiveTab,
-  ZebraColorScheme,
-  ZebraMappingMode,
   ShapeType,
   ShapeSubtype,
   Axis,
@@ -115,7 +111,6 @@ export type {
   DisplayOptions,
   RenderOptions,
   ViewerOptions,
-  ZebraOptions,
   CombinedOptions,
 } from "./core/types.js";
 

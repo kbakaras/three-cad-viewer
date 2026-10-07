@@ -1,10 +1,7 @@
 import * as THREE from "three";
 import { LineSegments2 } from "three/examples/jsm/lines/LineSegments2.js";
 import { deepDispose, disposeGeometry, isMesh } from "../utils/utils.js";
-import { ZebraTool } from "../tools/cad_tools/zebra.js";
 import type {
-  ZebraColorScheme,
-  ZebraMappingMode,
   ColorValue,
   ColoredMaterial,
 } from "../core/types";
@@ -60,7 +57,6 @@ type Edges = LineSegments2 | THREE.LineSegments;
  * - Material management (color, opacity, metalness, roughness)
  * - Visibility toggling (shapes, edges independently)
  * - Selection/hover highlighting
- * - Zebra stripe tool integration
  * - Clipping plane caps
  *
  * ## Usage
@@ -114,9 +110,6 @@ class ObjectGroup extends THREE.Group {
   shapeGeometry?: THREE.BufferGeometry | null;
   /** Material tag from shapes data, used for Studio mode material lookup */
   materialTag: string;
-  minZ?: number;
-  height?: number;
-  private _zebra: ZebraTool | null;
 
   // Studio mode state
   private _cadFrontMaterial: ColoredMaterial | null;
@@ -167,7 +160,6 @@ class ObjectGroup extends THREE.Group {
     this.vertexFocusSize = 8; // Size of the points when highlighted
     this.edgeFocusWidth = 5; // Size of the edges when highlighted
 
-    this._zebra = null; // Lazy-initialized zebra tool
     this.materialTag = "";
 
     // Studio mode state
@@ -180,16 +172,6 @@ class ObjectGroup extends THREE.Group {
   }
 
   /**
-   * Get the zebra tool, creating it on first access.
-   */
-  get zebra(): ZebraTool {
-    if (!this._zebra) {
-      this._zebra = new ZebraTool();
-    }
-    return this._zebra;
-  }
-
-  /**
    * Whether this ObjectGroup is currently in Studio mode.
    */
   get isStudioMode(): boolean {
@@ -198,7 +180,7 @@ class ObjectGroup extends THREE.Group {
 
   /**
    * Dispose of all resources and clean up memory.
-   * Releases geometry, materials, children, and zebra tool.
+   * Releases geometry, materials, and children.
    */
   dispose(): void {
     if (this.shapeGeometry) {
@@ -209,10 +191,6 @@ class ObjectGroup extends THREE.Group {
     if (this.children) {
       deepDispose(this.children);
       this.clear();
-    }
-    if (this._zebra) {
-      this._zebra.dispose();
-      this._zebra = null;
     }
     // Release studio material references (do NOT dispose -- NestedGroup owns them)
     this._cadFrontMaterial = null;
@@ -704,34 +682,6 @@ class ObjectGroup extends THREE.Group {
   }
 
   /**
-   * Set Z-axis scale for GDS extrusion visualization.
-   * Recursively scales all meshes and adjusts positions.
-   */
-  setZScale(value: number): void {
-    const walk = (
-      obj: THREE.Object3D,
-      minZ: number,
-      height: number,
-      scalePos: boolean = true,
-    ) => {
-      for (const child of obj.children) {
-        if ("isMesh" in child || "isLine" in child) {
-          child.scale.z = value;
-          if (scalePos && child.parent) {
-            child.parent.position.z = minZ * value;
-          }
-        } else if ("isGroup" in child) {
-          // don't scale position of clipping planes
-          walk(child, minZ, height, !child.name.startsWith("clipping"));
-        }
-      }
-    };
-    if (this.front || this.back || this.edges) {
-      walk(this, this.minZ!, this.height!);
-    }
-  }
-
-  /**
    * Mark all materials as needing update.
    */
   updateMaterials(flag: boolean): void {
@@ -758,55 +708,6 @@ class ObjectGroup extends THREE.Group {
       deepDispose(group);
     }
     this.clipping.clear();
-  }
-
-  /**
-   * Enable or disable zebra stripe visualization on front faces.
-   */
-  setZebra(flag: boolean): void {
-    if (this.front) {
-      const visible = this.front.material.visible;
-      if (flag) {
-        this.zebra.applyToMesh(this.front, visible);
-      } else {
-        this.zebra.restoreMesh(this.front, visible);
-      }
-    }
-  }
-
-  /**
-   * Set the number of zebra stripes.
-   */
-  setZebraCount(value: number): void {
-    this.zebra.setStripeCount(value);
-  }
-
-  /**
-   * Set the opacity of zebra stripes.
-   */
-  setZebraOpacity(value: number): void {
-    this.zebra.setStripeOpacity(value);
-  }
-
-  /**
-   * Set the direction/angle of zebra stripes.
-   */
-  setZebraDirection(value: number): void {
-    this.zebra.setStripeDirection(value);
-  }
-
-  /**
-   * Set the color scheme for zebra stripes.
-   */
-  setZebraColorScheme(value: ZebraColorScheme): void {
-    this.zebra.setColorScheme(value);
-  }
-
-  /**
-   * Set the mapping mode for zebra stripes.
-   */
-  setZebraMappingMode(value: ZebraMappingMode): void {
-    this.zebra.setMappingMode(value);
   }
 
   // ===========================================================================

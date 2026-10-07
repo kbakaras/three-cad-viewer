@@ -57,7 +57,7 @@ export interface DisplayLike {
 
 /**
  * Minimal viewer interface for CAD tools.
- * Used by measurement, selection, and zebra tools.
+ * Used by measurement and selection tools.
  */
 export interface ViewerLike {
   display: DisplayLike;

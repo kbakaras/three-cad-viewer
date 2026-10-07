@@ -438,9 +438,6 @@ describe("ViewerState", () => {
       // Check viewer defaults
       expect(defaults.axes).toBe(false);
 
-      // Check zebra defaults
-      expect(defaults.zebraCount).toBe(9);
-
       // Check runtime defaults
       expect(defaults.activeTool).toBeNull();
     });
@@ -469,7 +466,6 @@ describe("ViewerState", () => {
       expect(logSpy).toHaveBeenCalledWith("[three-cad-viewer]", "Display:");
       expect(logSpy).toHaveBeenCalledWith("[three-cad-viewer]", "Render:");
       expect(logSpy).toHaveBeenCalledWith("[three-cad-viewer]", "View:");
-      expect(logSpy).toHaveBeenCalledWith("[three-cad-viewer]", "Zebra:");
       expect(logSpy).toHaveBeenCalledWith("[three-cad-viewer]", "Runtime:");
 
       // Should log actual values
@@ -506,11 +502,6 @@ describe("ViewerState", () => {
       expect(ViewerState.VIEWER_DEFAULTS).toHaveProperty("axes");
       expect(ViewerState.VIEWER_DEFAULTS).toHaveProperty("ortho");
       expect(ViewerState.VIEWER_DEFAULTS).toHaveProperty("grid");
-    });
-
-    test("ZEBRA_DEFAULTS has expected keys", () => {
-      expect(ViewerState.ZEBRA_DEFAULTS).toHaveProperty("zebraCount");
-      expect(ViewerState.ZEBRA_DEFAULTS).toHaveProperty("zebraOpacity");
     });
 
     test("RUNTIME_DEFAULTS has expected keys", () => {

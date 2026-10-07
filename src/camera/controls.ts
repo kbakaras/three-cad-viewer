@@ -1,50 +1,13 @@
 import * as THREE from "three";
 
 import { CADOrbitControls } from "./controls/CADOrbitControls.js";
-import { CADTrackballControls } from "./controls/CADTrackballControls.js";
-import type { ControlType } from "../core/types";
-
-// Internal normalization factors for user-facing speed settings (1.0 = default experience)
-// TrackballControls and OrbitControls have different internal scaling, so we normalize separately
-const SPEED_FACTORS: Record<
-  ControlType,
-  { pan: number; rotate: number; zoom: number }
-> = {
-  trackball: {
-    pan: 0.22,
-    rotate: 1.0,
-    zoom: 2.0,
-  },
-  orbit: {
-    pan: 1.0,
-    rotate: 1.0,
-    zoom: 1.0,
-  },
-};
-
-type ControlsInstance = CADOrbitControls | CADTrackballControls;
 
 /**
- * Unified camera controls supporting both orbit and trackball modes.
- *
- * Controls wraps CADOrbitControls and CADTrackballControls, providing:
- * - Consistent API regardless of control type
- * - Normalized speed settings (1.0 = default experience)
- * - State saving/restoring for reset functionality
- * - Camera switching support
- *
- * ## Control Types
- * - `"orbit"`: OrbitControls - familiar Google Maps style rotation
- * - `"trackball"`: TrackballControls - unrestricted rotation with optional Holroyd mode
- *
- * ## Holroyd Mode
- * When enabled for trackball controls, prevents tumbling by keeping
- * the up vector stable. This provides a more intuitive CAD experience.
+ * Orbit camera controls with state saving and camera switching.
  *
  * @internal - This is an internal class used by Viewer
  */
 class Controls {
-  type: ControlType;
   camera: THREE.Camera;
   target: THREE.Vector3;
   target0: THREE.Vector3;
@@ -52,32 +15,26 @@ class Controls {
   rotateSpeed: number;
   zoomSpeed: number;
   panSpeed: number;
-  holroyd: boolean;
-  controls!: ControlsInstance; // Initialized in constructor via initOrbitControls/initTrackballControls
+  controls: CADOrbitControls;
   currentUpdateCallback: (() => void) | null;
 
   /**
    * Create Camera Controls.
-   * @param type - Type of controls: "orbit", "trackball".
    * @param camera - The camera object.
    * @param target - The lookAt target for the camera.
    * @param domElement - The dom element of the rendering canvas.
    * @param rotateSpeed - Speed for rotating.
    * @param zoomSpeed - Speed for zooming.
    * @param panSpeed - Speed for panning.
-   * @param holroyd - Enable holroyd (non-tumbling) mode for trackball.
    */
   constructor(
-    type: ControlType,
     camera: THREE.Camera,
     target: THREE.Vector3,
     domElement: HTMLElement,
     rotateSpeed: number = 1.0,
     zoomSpeed: number = 1.0,
     panSpeed: number = 1.0,
-    holroyd: boolean = true,
   ) {
-    this.type = type;
     this.camera = camera;
     this.target = target;
     this.target0 = target.clone();
@@ -85,42 +42,18 @@ class Controls {
     this.rotateSpeed = rotateSpeed;
     this.zoomSpeed = zoomSpeed;
     this.panSpeed = panSpeed;
-    this.holroyd = holroyd;
-
-    switch (type) {
-      case "orbit":
-        this.initOrbitControls();
-        break;
-      case "trackball":
-        this.initTrackballControls(holroyd);
-        break;
-    }
+    this.controls = new CADOrbitControls(this.camera, this.domElement);
 
     this.controls.target.copy(this.target);
-    this._applySpeedFactors();
+    this.controls.rotateSpeed = this.rotateSpeed;
+    this.controls.zoomSpeed = this.zoomSpeed;
+    this.controls.panSpeed = this.panSpeed;
 
     this.currentUpdateCallback = null;
 
     // save default view for reset
     this.saveState();
     this.update();
-  }
-
-  /**
-   * Get the speed factors for the current control type.
-   */
-  private _getSpeedFactors(): { pan: number; rotate: number; zoom: number } {
-    return SPEED_FACTORS[this.type];
-  }
-
-  /**
-   * Apply speed factors to controls.
-   */
-  private _applySpeedFactors(): void {
-    const factors = this._getSpeedFactors();
-    this.controls.rotateSpeed = this.rotateSpeed * factors.rotate;
-    this.controls.zoomSpeed = this.zoomSpeed * factors.zoom;
-    this.controls.panSpeed = this.panSpeed * factors.pan;
   }
 
   /**
@@ -135,22 +68,6 @@ class Controls {
    */
   saveState(): void {
     this.controls.saveState();
-  }
-
-  /**
-   * Initialize Trackball Controls.
-   * @param holroyd - enable holroyd (non tumbling) mode.
-   */
-  initTrackballControls(holroyd: boolean = true): void {
-    this.controls = new CADTrackballControls(this.camera, this.domElement);
-    this.setHolroydTrackball(holroyd);
-  }
-
-  /**
-   * Initialize Orbit Controls.
-   */
-  initOrbitControls(): void {
-    this.controls = new CADOrbitControls(this.camera, this.domElement);
   }
 
   /**
@@ -182,16 +99,6 @@ class Controls {
   }
 
   /**
-   * Update screen dimensions after canvas resize.
-   * Only applies to TrackballControls which caches screen dimensions.
-   */
-  handleResize(): void {
-    if (this.controls instanceof CADTrackballControls) {
-      this.controls.handleResize();
-    }
-  }
-
-  /**
    * Reset camera to initial (automatically saved) state of position, up, quaternion and zoom.
    */
   reset(): void {
@@ -207,14 +114,6 @@ class Controls {
   }
 
   /**
-   * Change the trackball holroyd (non tumbling) flag.
-   * @param flag - holroyd mode enabled.
-   */
-  setHolroydTrackball(flag: boolean): void {
-    this.getTrackballControls().holroyd = flag;
-  }
-
-  /**
    * Get the lookAt target of the camera.
    * @returns The lookAt target
    */
@@ -227,8 +126,6 @@ class Controls {
    * @returns true if user is dragging/interacting, false otherwise.
    */
   isInteracting(): boolean {
-    // Both OrbitControls and TrackballControls use state = -1 for NONE (not interacting)
-    // Any other state value means the user is actively dragging
     return this.controls.state !== -1;
   }
 
@@ -253,7 +150,7 @@ class Controls {
    */
   setZoomSpeed(val: number): void {
     this.zoomSpeed = val;
-    this.controls.zoomSpeed = val * this._getSpeedFactors().zoom;
+    this.controls.zoomSpeed = val;
   }
 
   /**
@@ -262,7 +159,7 @@ class Controls {
    */
   setPanSpeed(val: number): void {
     this.panSpeed = val;
-    this.controls.panSpeed = val * this._getSpeedFactors().pan;
+    this.controls.panSpeed = val;
   }
 
   /**
@@ -271,7 +168,7 @@ class Controls {
    */
   setRotateSpeed(val: number): void {
     this.rotateSpeed = val;
-    this.controls.rotateSpeed = val * this._getSpeedFactors().rotate;
+    this.controls.rotateSpeed = val;
   }
 
   /**
@@ -311,68 +208,21 @@ class Controls {
     this.controls.zoom0 = zoom;
   };
 
-  // Type-safe accessors for control-specific methods
-
-  private getOrbitControls(): CADOrbitControls {
-    if (!(this.controls instanceof CADOrbitControls)) {
-      throw new Error("Operation requires OrbitControls");
-    }
-    return this.controls;
-  }
-
-  private getTrackballControls(): CADTrackballControls {
-    if (!(this.controls instanceof CADTrackballControls)) {
-      throw new Error("Operation requires TrackballControls");
-    }
-    return this.controls;
-  }
-
-  // Rotations for OrbitControls
-
   /**
-   * Rotate camera up (OrbitControls only)
+   * Rotate camera up.
    * @param angle - the angle to rotate.
    */
   rotateUp(angle: number): void {
-    this.getOrbitControls().rotateUp((-angle / 180) * Math.PI);
+    this.controls.rotateUp((-angle / 180) * Math.PI);
     this.update();
   }
 
   /**
-   * Rotate camera left (OrbitControls only)
+   * Rotate camera left.
    * @param angle - the angle to rotate.
    */
   rotateLeft(angle: number): void {
-    this.getOrbitControls().rotateLeft((angle / 180) * Math.PI);
-    this.update();
-  }
-
-  // Rotations for TrackballControls
-
-  /**
-   * Rotate camera around x-axis (TrackballControls only)
-   * @param angle - the angle to rotate.
-   */
-  rotateX(angle: number): void {
-    this.getTrackballControls().rotateX((angle / 180) * Math.PI);
-    this.update();
-  }
-
-  /**
-   * Rotate camera around y-axis (TrackballControls only)
-   * @param angle - the angle to rotate.
-   */
-  rotateY(angle: number): void {
-    this.getTrackballControls().rotateY((angle / 180) * Math.PI);
-    this.update();
-  }
-
-  /**
-   * Rotate camera around z-axis (TrackballControls only)
-   * @param angle - the angle to rotate.
-   */
-  rotateZ(angle: number): void {
-    this.getTrackballControls().rotateZ((angle / 180) * Math.PI);
+    this.controls.rotateLeft((angle / 180) * Math.PI);
     this.update();
   }
 }

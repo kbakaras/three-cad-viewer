@@ -27,7 +27,7 @@ describe("Viewer - Basic Integration", () => {
     // Check core properties exist
     expect(viewer.renderer).toBeDefined();
     expect(viewer.cadTools).toBeDefined();
-    expect(viewer.animation).toBeDefined();
+    expect(viewer.state).toBeDefined();
   });
 
   test("Display has required DOM elements", () => {
@@ -45,9 +45,6 @@ describe("Viewer - Basic Integration", () => {
 
     // Verify display option feature flags are TRUE for testing
     expect(displayOptions.selectTool).toBe(true);
-    expect(displayOptions.explodeTool).toBe(true);
-    expect(displayOptions.zscaleTool).toBe(true);
-    expect(displayOptions.zebraTool).toBe(true);
     expect(displayOptions.measurementDebug).toBe(true);
     expect(displayOptions.newTreeBehavior).toBe(true);
 

@@ -90,16 +90,14 @@ class Info {
   }
 
   /**
-   * Display the ready message with viewer version and control mode.
+   * Display the ready message with viewer version.
    * @param version - Viewer version string.
-   * @param control - Control mode name (e.g., "orbit", "trackball").
    */
-  readyMsg(version: string, control: string): void {
+  readyMsg(version: string): void {
     this.clear();
     const html = `<div class="tcv_info_header">Ready</div>
             <table class="small_table">
               <tr class="tcv_small_table_row" ><td>Version</td><td>${version}</td> </tr>
-              <tr class="tcv_small_table_row" ><td>Control</td><td>${control}</td></tr>
               <tr class="tcv_small_table_row" ><td>Axes</td>
                 <td>
                   <span class="tcv_info_red"><b>X</b></span>,

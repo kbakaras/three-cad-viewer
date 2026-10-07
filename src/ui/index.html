@@ -18,7 +18,6 @@
                 <div class="tcv_tabnav">
                     <span class="tcv_tooltip" style="flex: 1"><input class='tcv_tab_tree tcv_tab tcv_tab-left tcv_tab-selected' value="Tree" type="button" style="width: 100%" /></span>
                     <span class="tcv_tooltip" style="flex: 1"><input class='tcv_tab_clip tcv_tab tcv_tab-right tcv_tab-unselected' value="Clip" type="button" style="width: 100%" /></span>
-                    <span class="tcv_tooltip" style="flex: 1"><input class='tcv_tab_zebra tcv_tab tcv_tab-right tcv_tab-unselected' value="Zebra" type="button" style="width: 100%" /></span>
                     <span class="tcv_tooltip" style="flex: 1"><input class='tcv_tab_material tcv_tab tcv_tab-right tcv_tab-unselected' value="Material" type="button" style="width: 100%" /></span>
                     <span class="tcv_tooltip" style="flex: 1"><input class='tcv_tab_studio tcv_tab tcv_tab-right tcv_tab-unselected' value="Studio" type="button" style="width: 100%" /></span>
                 </div>
@@ -44,11 +43,6 @@
                 <div class="tcv_cad_tree_toggles tcv_toggles_material" style="display: none;">
                     <span class="tcv_tooltip" data-tooltip="Reset to original values">
                         <input class='tcv_material_reset tcv_btn tcv_small_btn' value="R" type="button" />
-                    </span>
-                </div>
-                <div class="tcv_cad_tree_toggles tcv_toggles_zebra" style="display: none;">
-                    <span class="tcv_tooltip" data-tooltip="Reset to default zebra settings">
-                        <input class='tcv_zebra_reset tcv_btn tcv_small_btn' value="R" type="button" />
                     </span>
                 </div>
                 <div class="tcv_cad_tree_toggles tcv_toggles_studio" style="display: none;">
@@ -154,55 +148,6 @@
                         </div>
                         <div class="tcv_material_info">
                             Control material for CAD view, values in %
-                        </div>
-                    </div>
-                    <div class="tcv_cad_zebra_container">
-                        <div class="tcv_studio_row">
-                            <span class="tcv_label">Stripe Count</span>
-                            <div class="tcv_studio_slider_group">
-                                <input type="range" min="2" max="50" value="10"
-                                    class="tcv_sld_value_zebra_count tcv_clip_slider">
-                                <input value=10 class="tcv_inp_value_zebra_count tcv_clip_input"></input>
-                            </div>
-                        </div>
-                        <div class="tcv_studio_row">
-                            <span class="tcv_label">Stripe Opacity</span>
-                            <div class="tcv_studio_slider_group">
-                                <input type="range" min="0.0" max="1.0" step="0.01" value="1.0"
-                                    class="tcv_sld_value_zebra_opacity tcv_clip_slider">
-                                <input value=1.0 class="tcv_inp_value_zebra_opacity tcv_clip_input"></input>
-                            </div>
-                        </div>
-                        <div class="tcv_studio_row">
-                            <span class="tcv_label">Direction</span>
-                            <div class="tcv_studio_slider_group">
-                                <input type="range" min="0" max="90" step="0.5" value="0"
-                                    class="tcv_sld_value_zebra_direction tcv_clip_slider">
-                                <input value=0 class="tcv_inp_value_zebra_direction tcv_clip_input"></input>
-                            </div>
-                        </div>   
-                        <div class="tcv_zebra_radio">
-                            <div>
-                                <span class="tcv_tooltip" data-tooltip="Select stripe color scheme">
-                                    <input class='tcv_zebra_colorscheme tcv_radio tcv_zebra_color1' type="radio" id="zebra_blackwhite" name="zebra_color_group" value="blackwhite" checked>
-                                    <label for="zebra_blackwhite" class="tcv_radio_label">B/W</label>
-                                    <input class='tcv_zebra_colorscheme tcv_radio tcv_zebra_color2' type="radio" id="zebra_grayscale" name="zebra_color_group" value="grayscale">
-                                    <label for="zebra_grayscale" class="tcv_radio_label">Gray</label>
-                                    <input class='tcv_zebra_colorscheme tcv_radio tcv_zebra_color3' type="radio" id="zebra_colorful" name="zebra_color_group" value="colorful">
-                                    <label for="zebra_colorful" class="tcv_radio_label">Colors</label>
-                                </span>
-
-                            </div>
-                        </div>                                             
-                        <div class="tcv_zebra_radio">
-                            <div>
-                               <span class="tcv_tooltip" data-tooltip="Select stripe mapping">
-                                    <input class='tcv_zebra_mapping tcv_radio tcv_zebra_mapping1' type="radio" id="zebra_reflection" name="zebra_mapping_group" value="reflection" checked>
-                                    <label for="zebra_reflection" class="tcv_radio_label">Reflection</label>
-                                    <input class='tcv_zebra_mapping tcv_radio tcv_zebra_mapping2' type="radio" id="zebra_normal" name="zebra_mapping_group" value="normal">
-                                    <label for="zebra_normal" class="tcv_radio_label">Normal</label>
-                                </span>
-                            </div>
                         </div>
                     </div>
                     <div class="tcv_cad_studio_container">
@@ -358,24 +303,6 @@
             <div class="tcv_properties_measurement_panel tcv_panel tcv_round">
                 <div class="tcv_measure_header">Properties</div>
                 <div class="tcv_measure_subheader">Shape</div>
-            </div>
-
-            <div class="tcv_cad_animation tcv_round">
-                <span class="tcv_animation_label">E</span>
-                <span><input type="range" min="0" max="1000" value="0"
-                        class="tcv_animation_slider tcv_clip_slider"></span>
-                <span class="tcv_tooltip" data-tooltip="Play animation"><input class='tcv_play tcv_btn'
-                        type="button" /></span>
-                <span class="tcv_tooltip" data-tooltip="Pause animation"><input class='tcv_pause tcv_btn'
-                        type="button" /></span>
-                <span class="tcv_tooltip" data-tooltip="Stop and reset animation"><input class='tcv_stop tcv_btn'
-                        type="button" /></span>
-            </div>
-            
-            <div class="tcv_cad_zscale tcv_round">
-                <span class="tcv_animation_label">Z</span>
-                <span><input type="range" min="1" max="32" value="0"
-                        class="tcv_zscale_slider tcv_clip_slider"></span>
             </div>
 
             <div class="tcv_cad_help tcv_round">

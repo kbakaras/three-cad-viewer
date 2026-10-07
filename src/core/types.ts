@@ -18,23 +18,11 @@ export type ThemeInput = "light" | "dark" | "browser";
 /** Resolved theme (after browser detection) */
 export type Theme = "light" | "dark";
 
-/** Control type */
-export type ControlType = "orbit" | "trackball";
-
 /** Up direction */
 export type UpDirection = "Z" | "Y" | "legacy";
 
-/** Animation mode */
-export type AnimationMode = "none" | "animation" | "explode";
-
 /** Active sidebar tab */
-export type ActiveTab = "tree" | "clip" | "material" | "zebra" | "studio";
-
-/** Zebra color scheme */
-export type ZebraColorScheme = "blackwhite" | "colorful" | "grayscale";
-
-/** Zebra mapping mode */
-export type ZebraMappingMode = "reflection" | "normal";
+export type ActiveTab = "tree" | "clip" | "material" | "studio";
 
 /**
  * Studio environment preset name.
@@ -217,7 +205,6 @@ export type ActionShortcutName =
   | "perspective"
   | "transparent"
   | "blackedges"
-  | "zscale"
   | "reset"
   | "resize"
   | "iso"
@@ -227,19 +214,15 @@ export type ActionShortcutName =
   | "bottom"
   | "left"
   | "right"
-  | "explode"
   | "distance"
   | "properties"
   | "select"
   | "isolateSelection"
   | "hideSelection"
   | "help"
-  | "play"
-  | "stop"
   | "tree"
   | "clip"
   | "material"
-  | "zebra"
   | "studio";
 
 /** Action keymap: action name → key character */
@@ -280,12 +263,6 @@ export interface DisplayOptions {
   measureTools?: boolean;
   /** Show select tool (default: true) */
   selectTool?: boolean;
-  /** Show explode tool (default: true) */
-  explodeTool?: boolean;
-  /** Show z-scale tool (default: false) */
-  zscaleTool?: boolean;
-  /** Show zebra tool (default: true) */
-  zebraTool?: boolean;
   /** Show studio tool (default: true) */
   studioTool?: boolean;
   /** Enable measurement debug mode (default: false) */
@@ -318,8 +295,6 @@ export interface RenderOptions {
 
 /** Viewer options (includes studio mode configuration) */
 export interface ViewerOptions extends StudioModeOptions {
-  /** Use OrbitControls or TrackballControls (default: "orbit") */
-  control?: ControlType;
   /** Show X-, Y-, Z-axes (default: false) */
   axes?: boolean;
   /** Show axes at [0,0,0] or at object center (default: false) */
@@ -352,8 +327,6 @@ export interface ViewerOptions extends StudioModeOptions {
   clipSlider1?: number;
   /** Clip slider 2 value (default: -1) */
   clipSlider2?: number;
-  /** Holroyd mode for controls (default: true) */
-  holroyd?: boolean;
   /** Up direction (default: "Z") */
   up?: UpDirection;
   /** Hint for the number of grid ticks (default: 10) */
@@ -382,24 +355,9 @@ export interface ViewerOptions extends StudioModeOptions {
    * Tab to land on after render (default: "tree", i.e. CAD mode).
    * When set to a non-tree tab, the initial CAD paint is skipped so the
    * user doesn't see a brief CAD-mode flicker before the target tab takes
-   * over. Especially noticeable for "studio" (async env-map load) and
-   * "zebra" (material swap).
+   * over. Especially noticeable for "studio" (async env-map load).
    */
   tab?: ActiveTab;
-}
-
-/** Zebra tool options */
-export interface ZebraOptions {
-  /** Zebra stripe count (default: 9) */
-  zebraCount?: number;
-  /** Zebra opacity (default: 1.0) */
-  zebraOpacity?: number;
-  /** Zebra direction (default: 0) */
-  zebraDirection?: number;
-  /** Zebra color scheme (default: "blackwhite") */
-  zebraColorScheme?: ZebraColorScheme;
-  /** Zebra mapping mode (default: "reflection") */
-  zebraMappingMode?: ZebraMappingMode;
 }
 
 /** Studio mode options (environment, tone mapping, edges) */
@@ -432,7 +390,6 @@ export interface StudioModeOptions {
 export type CombinedOptions = DisplayOptions &
   RenderOptions &
   ViewerOptions &
-  ZebraOptions &
   StudioModeOptions;
 
 // =============================================================================
@@ -454,9 +411,6 @@ export interface ViewerStateShape {
   newTreeBehavior: boolean;
   measureTools: boolean;
   selectTool: boolean;
-  explodeTool: boolean;
-  zscaleTool: boolean;
-  zebraTool: boolean;
   studioTool: boolean;
   measurementDebug: boolean;
 
@@ -486,8 +440,6 @@ export interface ViewerStateShape {
   clipSlider0: number;
   clipSlider1: number;
   clipSlider2: number;
-  control: ControlType;
-  holroyd: boolean;
   up: UpDirection;
   ticks: number;
   gridFontSize: number;
@@ -500,13 +452,6 @@ export interface ViewerStateShape {
   rotateSpeed: number;
   zoomSpeed: number;
   timeit: boolean;
-
-  // Zebra
-  zebraCount: number;
-  zebraOpacity: number;
-  zebraDirection: number;
-  zebraColorScheme: ZebraColorScheme;
-  zebraMappingMode: ZebraMappingMode;
 
   // Studio
   studioEnvironment: string;
@@ -523,9 +468,6 @@ export interface ViewerStateShape {
 
   // Runtime
   activeTool: string | null;
-  animationMode: AnimationMode;
-  animationSliderValue: number;
-  zscaleActive: boolean;
   highlightedButton: string | null;
   activeTab: ActiveTab;
 }

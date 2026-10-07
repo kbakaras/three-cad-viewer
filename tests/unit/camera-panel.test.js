@@ -18,23 +18,20 @@ test("camera inspector tracks current viewer only while open and preserves text 
       ready: false,
       getCameraLocationSettings: vi.fn(() => ({
         position: [1, -2, 3],
-        quaternion: [0, 0, 0, 1],
         target: [4, 5, 6],
         zoom: 1.25,
       })),
       getOrtho: () => false,
-      state: { get: (key) => ({ control: "orbit", up: "Z" })[key] },
+      state: { get: (key) => ({ up: "Z" })[key] },
     };
     vi.advanceTimersByTime(250);
     expect(viewer.getCameraLocationSettings).not.toHaveBeenCalled();
     viewer.ready = true;
     vi.advanceTimersByTime(250);
     expect(output.value).toContain("position=(1, -2, 3)");
-    expect(output.value).toContain("quaternion=(0, 0, 0, 1)");
     expect(output.value).toContain("target=(4, 5, 6)");
     expect(output.value).toContain("zoom=1.25");
     expect(output.value).toContain("ortho=False");
-    expect(output.value).toContain("orbit_control=True");
     output.setSelectionRange(0, 10);
     vi.advanceTimersByTime(250);
     expect(output.selectionEnd).toBe(10);

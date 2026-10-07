@@ -49,7 +49,7 @@ afterEach(() => {
   Object.values(consoleSpy).forEach((spy) => spy.mockClear());
 });
 
-// Mock Canvas 2D Context for zebra tool and other texture generation
+// Mock Canvas 2D Context for texture generation
 const mockCanvas2DContext = {
   fillStyle: "",
   strokeStyle: "",

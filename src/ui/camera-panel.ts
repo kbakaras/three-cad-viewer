@@ -26,7 +26,7 @@ export class CameraPanel {
     const viewer = this.getViewer();
     let text = "Нет модели";
     if (viewer?.ready) {
-      const { position, quaternion, target, zoom } =
+      const { position, target, zoom } =
         viewer.getCameraLocationSettings();
       const number = (value: number, digits = 6) =>
         Number(value.toFixed(digits));
@@ -35,11 +35,9 @@ export class CameraPanel {
       text = [
         "VIEWER = ViewerConfig(",
         `    position=${tuple(position)},`,
-        `    quaternion=${tuple(quaternion, 9)},`,
         `    target=${tuple(target)},`,
         `    zoom=${number(zoom, 9)},`,
         `    ortho=${viewer.getOrtho() ? "True" : "False"},`,
-        `    orbit_control=${viewer.state.get("control") === "orbit" ? "True" : "False"},`,
         `    up="${viewer.state.get("up")}",`,
         ")",
       ].join("\n");

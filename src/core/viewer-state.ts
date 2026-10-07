@@ -3,12 +3,8 @@ import {
   CollapseState,
   type Theme,
   type ThemeInput,
-  type ControlType,
   type UpDirection,
-  type AnimationMode,
   type ActiveTab,
-  type ZebraColorScheme,
-  type ZebraMappingMode,
   type StudioBackground,
   type StudioToneMapping,
   type StudioTextureMapping,
@@ -39,9 +35,6 @@ interface DisplayDefaults {
   newTreeBehavior: boolean;
   measureTools: boolean;
   selectTool: boolean;
-  explodeTool: boolean;
-  zscaleTool: boolean;
-  zebraTool: boolean;
   studioTool: boolean;
   measurementDebug: boolean;
 }
@@ -79,8 +72,6 @@ interface ViewerDefaults {
   clipSlider0: number;
   clipSlider1: number;
   clipSlider2: number;
-  control: ControlType;
-  holroyd: boolean;
   up: UpDirection;
   ticks: number;
   gridFontSize: number;
@@ -93,17 +84,6 @@ interface ViewerDefaults {
   rotateSpeed: number;
   zoomSpeed: number;
   timeit: boolean;
-}
-
-/**
- * Zebra tool defaults
- */
-interface ZebraDefaults {
-  zebraCount: number;
-  zebraOpacity: number;
-  zebraDirection: number;
-  zebraColorScheme: ZebraColorScheme;
-  zebraMappingMode: ZebraMappingMode;
 }
 
 /**
@@ -128,9 +108,6 @@ interface StudioModeDefaults {
  */
 interface RuntimeDefaults {
   activeTool: string | null;
-  animationMode: AnimationMode;
-  animationSliderValue: number;
-  zscaleActive: boolean;
   highlightedButton: string | null;
   activeTab: ActiveTab;
 }
@@ -141,7 +118,6 @@ interface RuntimeDefaults {
 type StateShape = DisplayDefaults &
   RenderDefaults &
   ViewerDefaults &
-  ZebraDefaults &
   StudioModeDefaults &
   RuntimeDefaults;
 
@@ -180,9 +156,6 @@ const STATE_KEYS: ReadonlySet<string> = new Set<StateKey>([
   "newTreeBehavior",
   "measureTools",
   "selectTool",
-  "explodeTool",
-  "zscaleTool",
-  "zebraTool",
   "studioTool",
   "measurementDebug",
   // Render
@@ -210,8 +183,6 @@ const STATE_KEYS: ReadonlySet<string> = new Set<StateKey>([
   "clipSlider0",
   "clipSlider1",
   "clipSlider2",
-  "control",
-  "holroyd",
   "up",
   "ticks",
   "gridFontSize",
@@ -224,12 +195,6 @@ const STATE_KEYS: ReadonlySet<string> = new Set<StateKey>([
   "rotateSpeed",
   "zoomSpeed",
   "timeit",
-  // Zebra
-  "zebraCount",
-  "zebraOpacity",
-  "zebraDirection",
-  "zebraColorScheme",
-  "zebraMappingMode",
   // Studio
   "studioEnvironment",
   "studioEnvIntensity",
@@ -244,9 +209,6 @@ const STATE_KEYS: ReadonlySet<string> = new Set<StateKey>([
   "studioAOIntensity",
   // Runtime
   "activeTool",
-  "animationMode",
-  "animationSliderValue",
-  "zscaleActive",
   "highlightedButton",
   "activeTab",
 ]);
@@ -287,7 +249,6 @@ const STATE_TO_NOTIFICATION_KEY: Partial<Record<StateKey, string>> = {
   zoomSpeed: "zoom_speed",
   panSpeed: "pan_speed",
   rotateSpeed: "rotate_speed",
-  holroyd: "holroyd",
   // Clipping settings
   clipIntersection: "clip_intersection",
   clipObjectColors: "clip_object_colors",
@@ -298,12 +259,6 @@ const STATE_TO_NOTIFICATION_KEY: Partial<Record<StateKey, string>> = {
   clipNormal0: "clip_normal_0",
   clipNormal1: "clip_normal_1",
   clipNormal2: "clip_normal_2",
-  // Zebra settings
-  zebraCount: "zebra_count",
-  zebraOpacity: "zebra_opacity",
-  zebraDirection: "zebra_direction",
-  zebraColorScheme: "zebra_color_scheme",
-  zebraMappingMode: "zebra_mapping_mode",
   // Studio settings
   studioEnvironment: "studio_environment",
   studioEnvIntensity: "studio_env_intensity",
@@ -316,8 +271,6 @@ const STATE_TO_NOTIFICATION_KEY: Partial<Record<StateKey, string>> = {
   studioShadowIntensity: "studio_shadow_intensity",
   studioShadowSoftness: "studio_shadow_softness",
   studioAOIntensity: "studio_ao_intensity",
-  // Animation/Explode slider (shared state, mutually exclusive modes)
-  animationSliderValue: "relative_time",
 };
 
 /**
@@ -327,8 +280,6 @@ const STATE_TO_NOTIFICATION_KEY: Partial<Record<StateKey, string>> = {
 const STATE_NOTIFICATION_TRANSFORM: Partial<
   Record<StateKey, (v: unknown) => unknown>
 > = {
-  // Slider stores 0-1000, but notifications should be 0-1
-  animationSliderValue: (v) => (v as number) / 1000,
 };
 
 /**
@@ -365,7 +316,7 @@ function resolveTheme(inputTheme: ThemeInput | undefined): Theme | undefined {
  * - Display settings (theme, dimensions, tools enabled)
  * - Render settings (lighting, materials)
  * - View settings (camera, clipping, grid)
- * - Runtime state (active tool, animation)
+ * - Runtime state (active tool)
  *
  * ## Observable Pattern
  * State changes can be observed via `subscribe()`:
@@ -422,28 +373,20 @@ class ViewerState {
       bottom: "2",
       left: "4",
       right: "6",
-      explode: "x",
-      zscale: "L",
       distance: "D",
       properties: "P",
       select: "S",
       isolateSelection: "i",
       hideSelection: "Alt+i",
       help: "h",
-      play: " ",
-      stop: "Escape",
       tree: "T",
       clip: "C",
       material: "M",
-      zebra: "Z",
       studio: "s",
     },
     newTreeBehavior: true,
     measureTools: true,
     selectTool: true,
-    explodeTool: true,
-    zscaleTool: false,
-    zebraTool: true,
     studioTool: true,
     measurementDebug: false,
   };
@@ -481,8 +424,6 @@ class ViewerState {
     clipSlider0: -1,
     clipSlider1: -1,
     clipSlider2: -1,
-    control: "orbit",
-    holroyd: true,
     up: "Z",
     ticks: 10,
     gridFontSize: 10,
@@ -495,17 +436,6 @@ class ViewerState {
     rotateSpeed: 1.0,
     zoomSpeed: 1.0,
     timeit: false,
-  };
-
-  /**
-   * Zebra tool settings
-   */
-  static ZEBRA_DEFAULTS: ZebraDefaults = {
-    zebraCount: 9,
-    zebraOpacity: 1.0,
-    zebraDirection: 0,
-    zebraColorScheme: "blackwhite",
-    zebraMappingMode: "reflection",
   };
 
   /**
@@ -535,9 +465,6 @@ class ViewerState {
    */
   static RUNTIME_DEFAULTS: RuntimeDefaults = {
     activeTool: null,
-    animationMode: "none",
-    animationSliderValue: 0,
-    zscaleActive: false,
     highlightedButton: null,
     activeTab: "tree",
   };
@@ -558,7 +485,6 @@ class ViewerState {
       ...ViewerState.DISPLAY_DEFAULTS,
       ...ViewerState.RENDER_DEFAULTS,
       ...ViewerState.VIEWER_DEFAULTS,
-      ...ViewerState.ZEBRA_DEFAULTS,
       ...ViewerState.STUDIO_MODE_DEFAULTS,
       ...ViewerState.RUNTIME_DEFAULTS,
     };
@@ -871,7 +797,6 @@ class ViewerState {
       ...ViewerState.DISPLAY_DEFAULTS,
       ...ViewerState.RENDER_DEFAULTS,
       ...ViewerState.VIEWER_DEFAULTS,
-      ...ViewerState.ZEBRA_DEFAULTS,
       ...ViewerState.STUDIO_MODE_DEFAULTS,
       ...ViewerState.RUNTIME_DEFAULTS,
     };
@@ -902,7 +827,6 @@ class ViewerState {
       ...ViewerState.DISPLAY_DEFAULTS,
       ...ViewerState.RENDER_DEFAULTS,
       ...ViewerState.VIEWER_DEFAULTS,
-      ...ViewerState.ZEBRA_DEFAULTS,
       ...ViewerState.STUDIO_MODE_DEFAULTS,
       ...ViewerState.RUNTIME_DEFAULTS,
     };
@@ -922,7 +846,6 @@ class ViewerState {
     logCategory("Display", ViewerState.DISPLAY_DEFAULTS);
     logCategory("Render", ViewerState.RENDER_DEFAULTS);
     logCategory("View", ViewerState.VIEWER_DEFAULTS);
-    logCategory("Zebra", ViewerState.ZEBRA_DEFAULTS);
     logCategory("Studio", ViewerState.STUDIO_MODE_DEFAULTS);
     logCategory("Runtime", ViewerState.RUNTIME_DEFAULTS);
   }

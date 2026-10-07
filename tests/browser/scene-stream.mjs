@@ -120,7 +120,8 @@ try {
   });
   await page.goto(url, { waitUntil: "commit" });
   await applied(first);
-  await page.reload({ waitUntil: "commit" });
+  await page.waitForTimeout(1000);
+  await page.reload({ waitUntil: "commit", timeout: 60000 });
   await applied(first);
   await page.waitForFunction(() => window.viewer?.shapes?.name === "Модель");
   if (process.argv.includes("--pixels-only")) {
@@ -137,10 +138,11 @@ try {
     await browser.close();
     process.exit(0);
   }
+  source.config.reset_camera = "keep";
   const top = leaves(source.tree).find(
-    (n) => n.id.includes("/t1/") && n.kind === "solid",
+    (n) => n.name === "Тело" && n.kind === "solid",
   );
-  assert.ok(top, "Top body must exist");
+  assert.ok(top, "Panel body must exist");
   const inspect = () =>
     page.evaluate((id) => {
       const v = window.viewer;
@@ -217,8 +219,9 @@ try {
   // Geometry replacement must retain every unrelated ObjectGroup.
   const replacement = structuredClone(modified);
   const wall = leaves(replacement.tree).find(
-    (n) => n.name === "Основные стены",
+    (n) => n.kind === "solid" && decodeURIComponent(n.id).includes("/Стены/"),
   );
+  assert.ok(wall, "Wall body must exist");
   leaves(replacement.tree).find((n) => n.id === top.id).geometry =
     wall.geometry;
   revision = await send(replacement);
@@ -230,13 +233,10 @@ try {
   );
 
   // Restore, then exercise the actual middle-button camera-follow patch.
-  for (const control of ["orbit", "trackball"]) {
-    const next = await send({
-      ...modified,
-      config: { ...modified.config, control },
-    });
+  {
+    const next = await send(modified);
     await applied(next);
-    // A new page reconnects and applies the control mode through a full snapshot.
+    // A new page reconnects and restores the scene through a full snapshot.
     await browser.close();
     browser = await launch();
     page = await browser.newPage({ viewport: { width: 1100, height: 760 } });
@@ -245,9 +245,9 @@ try {
     await applied(next);
     await page.waitForFunction(() => window.viewer?.shapes?.name === "Модель");
     const before = await inspect();
-    console.log("Checking controls and pixels", control);
+    console.log("Checking Orbit controls and pixels");
     const canvas = await pixels(page);
-    assert.ok(canvas.colors > 30, `${control}: model must not be blank`);
+    assert.ok(canvas.colors > 30, "model must not be blank");
     await page.mouse.move(650, 360);
     await page.mouse.down({ button: "middle" });
     await page.mouse.move(650, 400, { steps: 8 });
@@ -256,14 +256,14 @@ try {
     assert.notDeepEqual(
       after.target,
       before.target,
-      `${control}: target must move`,
+      "target must move",
     );
     assert.notDeepEqual(
       after.position,
       before.position,
-      `${control}: camera must follow`,
+      "camera must follow",
     );
-    await page.screenshot({ path: `/tmp/office-${control}-delta.png` });
+    await page.screenshot({ path: "/tmp/office-orbit-delta.png" });
   }
   await page.setViewportSize({ width: 500, height: 740 });
   await page.waitForTimeout(300);

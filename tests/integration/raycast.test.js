@@ -445,12 +445,10 @@ describe("Raycaster", () => {
       });
     });
 
-    test("triggers callback with shift=true when shift key pressed", () => {
-      // Note: KeyMapper default maps "shift" to ctrlKey (keys are remappable)
+    test("ignores Ctrl-click reserved for viewer selection", () => {
       const event = new MouseEvent("mouseup", { button: 0, ctrlKey: true });
       raycaster.onMouseKeyUp(event);
-
-      expect(mockCallback).toHaveBeenCalledWith({ mouse: "left", shift: true });
+      expect(mockCallback).not.toHaveBeenCalled();
     });
 
     test("triggers callback with right mouse on right click", () => {

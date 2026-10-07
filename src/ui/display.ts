@@ -176,7 +176,7 @@ function _formatMatValue(value: number, step: number): string {
   return value.toFixed(decimals);
 }
 
-const buttons = ["plane", "play", "pause", "stop"];
+const buttons = ["plane"];
 
 const listeners = new EventListenerManager();
 
@@ -191,9 +191,6 @@ export interface DisplayOptions {
   measureTools: boolean;
   measurementDebug: boolean;
   selectTool: boolean;
-  explodeTool: boolean;
-  zscaleTool: boolean;
-  zebraTool: boolean;
   studioTool: boolean;
   glass: boolean;
   tools: boolean;
@@ -290,11 +287,9 @@ class Display {
   cadTreeToggles!: HTMLElement;
   cadClipToggles!: HTMLElement;
   cadMaterialToggles!: HTMLElement;
-  cadZebraToggles!: HTMLElement;
   cadStudioToggles!: HTMLElement;
   cadClip!: HTMLElement;
   cadMaterial!: HTMLElement;
-  cadZebra!: HTMLElement;
   cadStudio!: HTMLElement;
   private _spinnerEl: HTMLElement | null = null;
   private _warningBannerEl: HTMLElement | null = null;
@@ -311,21 +306,17 @@ class Display {
   private _matEditorDragAbort: AbortController | null = null;
   private _matEditorInputAbort: AbortController | null = null;
   cadInfo!: HTMLElement;
-  cadAnim!: HTMLElement;
-  private _animWasVisible: boolean = false;
   cadTools!: HTMLElement;
   cadHelp!: HTMLElement;
   tabTree!: HTMLElement;
   tabClip!: HTMLElement;
   tabMaterial!: HTMLElement;
-  tabZebra!: HTMLElement;
   tabStudio!: HTMLElement;
   tickValueElement!: HTMLElement;
   tickInfoElement!: HTMLElement;
   distanceMeasurementPanel!: HTMLElement;
   propertiesMeasurementPanel!: HTMLElement;
   planeLabels!: HTMLElement[];
-  animationSlider: HTMLInputElement | null;
 
   // Grouped UI elements for CAD tools (implements DisplayLike interface)
   measurementPanels: MeasurementPanelElements;
@@ -342,9 +333,6 @@ class Display {
   directionallightSlider: Slider | undefined;
   metalnessSlider: Slider | undefined;
   roughnessSlider: Slider | undefined;
-  zebraCountSlider: Slider | undefined;
-  zebraOpacitySlider: Slider | undefined;
-  zebraDirectionSlider: Slider | undefined;
   studioEnvIntensitySlider: Slider | undefined;
   studioExposureSlider: Slider | undefined;
   studioEnvRotationSlider: Slider | undefined;
@@ -358,9 +346,6 @@ class Display {
   measureTools: boolean;
   measurementDebug: boolean;
   selectTool: boolean;
-  explodeTool: boolean;
-  zscaleTool: boolean;
-  zScale: number;
   glass: boolean;
   tools: boolean;
   cadWidth: number;
@@ -406,9 +391,6 @@ class Display {
     this.measureTools = options.measureTools;
     this.measurementDebug = options.measurementDebug;
     this.selectTool = options.selectTool;
-    this.explodeTool = options.explodeTool;
-    this.zscaleTool = options.zscaleTool;
-    this.zScale = 1.0;
 
     this.cadTool = new Toolbar(
       this.getElement("tcv_cad_toolbar"),
@@ -420,7 +402,6 @@ class Display {
         features: {
           measureTools: this.measureTools,
           selectTool: this.selectTool,
-          explodeTool: this.explodeTool,
         },
       },
     );
@@ -457,11 +438,9 @@ class Display {
     this.cadTreeToggles = this.getElement("tcv_toggles_tree");
     this.cadClipToggles = this.getElement("tcv_toggles_clip");
     this.cadMaterialToggles = this.getElement("tcv_toggles_material");
-    this.cadZebraToggles = this.getElement("tcv_toggles_zebra");
     this.cadStudioToggles = this.getElement("tcv_toggles_studio");
     this.cadClip = this.getElement("tcv_cad_clip_container");
     this.cadMaterial = this.getElement("tcv_cad_material_container");
-    this.cadZebra = this.getElement("tcv_cad_zebra_container");
     this.cadStudio = this.getElement("tcv_cad_studio_container");
     this._spinnerEl = this.container.querySelector(
       ".tcv_studio_spinner",
@@ -478,18 +457,13 @@ class Display {
     }) as EventListener);
     this.tabTree = this.getElement("tcv_tab_tree");
     this.tabClip = this.getElement("tcv_tab_clip");
-    this.tabZebra = this.getElement("tcv_tab_zebra");
     this.tabMaterial = this.getElement("tcv_tab_material");
     this.tabStudio = this.getElement("tcv_tab_studio");
     this.cadInfo = this.getElement("tcv_cad_info_container");
     this._info = new Info(this.cadInfo);
     this.tickValueElement = this.getElement("tcv_tick_size_value");
     this.tickInfoElement = this.getElement("tcv_tick_size");
-    this.cadAnim = this.getElement("tcv_cad_animation");
     this.cadTools = this.getElement("tcv_cad_tools");
-    if (!options.zebraTool) {
-      this.tabZebra.style.display = "none";
-    }
     if (options.studioTool === false) {
       this.tabStudio.style.display = "none";
     }
@@ -518,7 +492,6 @@ class Display {
     this.cadTree.style.display = "block";
     this.cadClip.style.display = "none";
     this.cadMaterial.style.display = "none";
-    this.cadZebra.style.display = "none";
     this.cadStudio.style.display = "none";
     this.clipSliders = null;
 
@@ -654,33 +627,6 @@ class Display {
 
     this.cadTool.addSeparator();
 
-    this.clickButtons["explode"] = new ClickButton(
-      theme,
-      "explode",
-      "Explode tool",
-      this.setExplode,
-    );
-    if (this.explodeTool && !this.zscaleTool) {
-      this.cadTool.addButton(this.clickButtons["explode"], -1);
-    }
-
-    this.clickButtons["zscale"] = new ClickButton(
-      theme,
-      "zscale",
-      "Scale along the Z-axis",
-      this.setZScale,
-    );
-    if (this.zscaleTool && !this.explodeTool) {
-      this.cadTool.addButton(this.clickButtons["zscale"], -1);
-      this.showZScale(false);
-      const el = this.getInputElement("tcv_zscale_slider");
-      listeners.add(el, "change", (e) => {
-        if (!(e.target instanceof HTMLInputElement)) return;
-        this.zScale = parseInt(e.target.value);
-        this.viewer.setZscaleValue(parseInt(e.target.value));
-      });
-    }
-
     this.clickButtons["distance"] = new ClickButton(
       theme,
       "distance",
@@ -688,11 +634,7 @@ class Display {
       this.setTool,
     );
     this.cadTool.addButton(this.clickButtons["distance"], 3);
-    const count =
-      (this.measureTools ? 2 : 0) +
-      (this.explodeTool ? 1 : 0) +
-      (this.selectTool ? 1 : 0) +
-      (this.zscaleTool ? 1 : 0);
+    const count = (this.measureTools ? 2 : 0) + (this.selectTool ? 1 : 0);
     if (count > 1) {
       this.cadTool.addEllipsis(new Ellipsis(3, this.cadTool.maximize));
     }
@@ -714,7 +656,6 @@ class Display {
     this.cadTool.addButton(this.clickButtons["select"], 3);
 
     this.cadTool.defineGroup([
-      this.clickButtons["explode"],
       this.clickButtons["distance"],
       this.clickButtons["properties"],
       this.clickButtons["select"],
@@ -749,8 +690,6 @@ class Display {
     this.buttons["help"] = new Button(theme, "help", "Help", this.toggleHelp);
     this.cadTool.addButton(this.buttons["help"], -1);
 
-    // Initialize animation slider (will be set up in setupUI)
-    this.animationSlider = null;
   }
 
   // ---------------------------------------------------------------------------
@@ -772,11 +711,9 @@ class Display {
    * @returns The threshold width in pixels.
    */
   private _widthThreshold(): number {
-    let threshold = 770;
+    let threshold = 740;
     if (!this.state.get("pinning")) threshold -= 30;
     if (!this.state.get("selectTool")) threshold -= 30;
-    if (!this.state.get("explodeTool") && !this.state.get("zscaleTool"))
-      threshold -= 30;
     return threshold;
   }
 
@@ -810,12 +747,6 @@ class Display {
     const el = this.getElement(name);
     listeners.add(el, "click", fn);
     this._events.push(["click", name, fn]);
-  }
-
-  private setupRadioEvent(name: string, fn: EventListener): void {
-    const el = this.getElement(name);
-    listeners.add(el, "change", fn);
-    this._events.push(["change", name, fn]);
   }
 
   /**
@@ -894,9 +825,6 @@ class Display {
     this.directionallightSlider?.dispose();
     this.metalnessSlider?.dispose();
     this.roughnessSlider?.dispose();
-    this.zebraCountSlider?.dispose();
-    this.zebraOpacitySlider?.dispose();
-    this.zebraDirectionSlider?.dispose();
     this.studioEnvIntensitySlider?.dispose();
     this.studioExposureSlider?.dispose();
     this.studioEnvRotationSlider?.dispose();
@@ -928,12 +856,11 @@ class Display {
   }
 
   /**
-   * Display the ready message with viewer version and control mode.
+   * Display the ready message with viewer version.
    * @param version - Viewer version string.
-   * @param control - Control mode name (e.g., "orbit", "trackball").
    */
-  showReadyMessage(version: string, control: string): void {
-    this._info.readyMsg(version, control);
+  showReadyMessage(version: string): void {
+    this._info.readyMsg(version);
   }
 
   /**
@@ -1101,7 +1028,6 @@ class Display {
 
     this.setupClickEvent("tcv_clip_reset", this.handleClipReset);
     this.setupClickEvent("tcv_material_reset", this.handleMaterialReset);
-    this.setupClickEvent("tcv_zebra_reset", this.handleZebraReset);
 
     this.setupClickEvent("tcv_toggle_info", this.toggleInfo);
     this.setupClickEvent("tcv_toggle_tools_wrapper", this.toggleToolsPanel);
@@ -1112,7 +1038,6 @@ class Display {
     const tabs = [
       "tcv_tab_tree",
       "tcv_tab_clip",
-      "tcv_tab_zebra",
       "tcv_tab_material",
       "tcv_tab_studio",
     ];
@@ -1167,34 +1092,6 @@ class Display {
       isReadyCheck: viewerReadyCheck,
     });
 
-    this.zebraCountSlider = new Slider("zebra_count", 2, 50, this.container, {
-      handler: this.viewer.setZebraCount,
-      isReadyCheck: viewerReadyCheck,
-    });
-    this.zebraOpacitySlider = new Slider(
-      "zebra_opacity",
-      0.0,
-      1.0,
-      this.container,
-      {
-        handler: this.viewer.setZebraOpacity,
-        isReadyCheck: viewerReadyCheck,
-      },
-    );
-    this.zebraDirectionSlider = new Slider(
-      "zebra_direction",
-      0,
-      90,
-      this.container,
-      {
-        handler: this.viewer.setZebraDirection,
-        isReadyCheck: viewerReadyCheck,
-      },
-    );
-
-    this.getInputElement("tcv_zebra_color1").checked = true;
-    this.getInputElement("tcv_zebra_mapping1").checked = true;
-
     this.setupCheckEvent(
       "tcv_clip_plane_helpers",
       this.setClipPlaneHelpers,
@@ -1213,14 +1110,6 @@ class Display {
         this.setClipNormalFromPosition,
       );
     }
-
-    [1, 2, 3].forEach((id) => {
-      this.setupRadioEvent(`tcv_zebra_color${id}`, this.setZebraColorScheme);
-    });
-
-    [1, 2].forEach((id) => {
-      this.setupRadioEvent(`tcv_zebra_mapping${id}`, this.setZebraMappingMode);
-    });
 
     // Studio tab controls
     this.studioEnvIntensitySlider = new Slider(
@@ -1317,28 +1206,12 @@ class Display {
     this.setupClickEvent("tcv_mat_editor_reset", this.handleMatEditorReset);
     this._initMatEditorDrag();
 
-    this.setupClickEvent("tcv_play", this.controlAnimation);
-    this.setupClickEvent("tcv_pause", this.controlAnimation);
-    this.setupClickEvent("tcv_stop", this.controlAnimation);
-    const animSlider = this.container.getElementsByClassName(
-      "tcv_animation_slider",
-    )[0];
-    this.animationSlider =
-      animSlider instanceof HTMLInputElement ? animSlider : null;
-    // Initial value synced via subscription with immediate:true
-    if (this.animationSlider) {
-      listeners.add(this.animationSlider, "input", this.animationChange);
-    }
-    // Animation control starts hidden (state default is false)
-
     this.showHelp(false);
     this.showDistancePanel(false);
     this.showPropertiesPanel(false);
 
     this.showMeasureTools(this.measureTools);
     this.showSelectTool(this.selectTool);
-    this.showExplodeTool(this.explodeTool);
-    this.showZScaleTool(this.zscaleTool);
 
     // Subscribe to state changes
     this.subscribeToStateChanges();
@@ -1408,9 +1281,6 @@ class Display {
 
     sub("tools", (change) => {
       this.showTools(change.new);
-      const animationMode = this.state.get("animationMode");
-      this.cadAnim.style.display =
-        change.new && animationMode !== "none" ? "block" : "none";
     });
 
     sub("glass", (change) => {
@@ -1486,25 +1356,6 @@ class Display {
       { immediate: true },
     );
 
-    // Zebra slider subscriptions
-    sub("zebraCount", (change) => {
-      this.zebraCountSlider?.setValueFromState(change.new);
-    });
-    sub("zebraOpacity", (change) => {
-      this.zebraOpacitySlider?.setValueFromState(change.new);
-    });
-    sub("zebraDirection", (change) => {
-      this.zebraDirectionSlider?.setValueFromState(change.new);
-    });
-
-    // Zebra radio button subscriptions
-    sub("zebraColorScheme", (change) => {
-      this.setZebraColorSchemeSelect(change.new);
-    });
-    sub("zebraMappingMode", (change) => {
-      this.setZebraMappingModeSelect(change.new);
-    });
-
     // Studio tab subscriptions
     sub("studioEnvironment", (change) => {
       this._syncEnvDropdown(change.new);
@@ -1566,38 +1417,6 @@ class Display {
     );
     sub("studio4kEnvMaps", (change) => {
       this.getInputElement("tcv_studio_4k_env_maps").checked = change.new;
-    });
-
-    // Animation/Explode mode subscription - controls slider visibility, label, and explode button
-    sub(
-      "animationMode",
-      (change) => {
-        const mode = change.new;
-        const toolsEnabled = this.state.get("tools");
-        // Show/hide slider control (only when tools panel is enabled)
-        this.cadAnim.style.display =
-          toolsEnabled && mode !== "none" ? "block" : "none";
-        // Set label: "A" for animation, "E" for explode
-        this.getElement("tcv_animation_label").innerHTML =
-          mode === "explode" ? "E" : "A";
-        // Update explode button state
-        this.clickButtons["explode"]?.set(mode === "explode");
-      },
-      { immediate: true },
-    );
-    sub(
-      "animationSliderValue",
-      (change) => {
-        if (this.animationSlider) {
-          this.animationSlider.value = String(change.new);
-        }
-      },
-      { immediate: true },
-    );
-
-    // ZScale toolbar button subscription
-    sub("zscaleActive", (change) => {
-      this.clickButtons["zscale"]?.set(change.new);
     });
 
     // Camera button highlight subscription
@@ -1673,9 +1492,8 @@ class Display {
     this.lastPlaneState =
       typeof clipPlaneHelpers === "boolean" ? clipPlaneHelpers : false;
 
-    // Sync material, zebra, and studio sliders with current state values
+    // Sync material and studio sliders with current state values
     this.syncMaterialSlidersFromState();
-    this.syncZebraSlidersFromState();
     this.syncStudioSlidersFromState();
   }
 
@@ -1799,39 +1617,6 @@ class Display {
   // ---------------------------------------------------------------------------
 
   /**
-   * Handler for the explode button
-   */
-  setExplode = (_name: string, flag: boolean): void => {
-    this.viewer.setExplode(flag);
-  };
-
-  /**
-   * Show or hide the Explode checkbox
-   */
-  showExplode = (flag: boolean): void => {
-    const el = this.getElement("tcv_explode_widget");
-    el.style.display = flag ? "inline-block" : "none";
-  };
-
-  /**
-   * Checkbox Handler for setting the zscale mode
-   */
-  setZScale = (_name: string, flag: boolean): void => {
-    this.showZScale(flag);
-    this.viewer.nestedGroup.setZScale(1);
-    this.viewer.update(true);
-    this.getInputElement("tcv_zscale_slider").value = "1";
-  };
-
-  /**
-   * Show or hide the ZScale slider
-   */
-  showZScale = (flag: boolean): void => {
-    const el = this.getElement("tcv_cad_zscale");
-    el.style.display = flag ? "inline-block" : "none";
-  };
-
-  /**
    * Checkbox Handler for setting the tools mode.
    * Delegates state mutations to Viewer.activateTool() to maintain unidirectional data flow.
    */
@@ -1869,7 +1654,7 @@ class Display {
         this.viewer.checkChanges({ activeTool: ToolTypes.SELECT });
       }
     } else {
-      if (currentTool === name || name === "explode") {
+      if (currentTool === name) {
         this.viewer.toggleGroup(false);
         this.viewer.toggleTab(false);
       }
@@ -1942,23 +1727,6 @@ class Display {
    */
   showSelectTool = (flag: boolean): void => {
     this.clickButtons["select"].show(flag);
-  };
-
-  /**
-   * Show or hides explode tool
-   */
-  showExplodeTool = (flag: boolean): void => {
-    this.clickButtons["explode"].show(flag);
-  };
-
-  /**
-   * Show or hides ZScale tool
-   */
-  showZScaleTool = (flag: boolean): void => {
-    this.clickButtons["zscale"].show(flag);
-    if (!flag) {
-      this.showZScale(false);
-    }
   };
 
   /**
@@ -2102,7 +1870,7 @@ class Display {
   // ---------------------------------------------------------------------------
 
   /**
-   * Handler to activate a UI tab (tree / clipping / material / zebra)
+   * Handler to activate a UI tab.
    */
   selectTab = (e: Event): void => {
     if (!(e.target instanceof HTMLElement)) return;
@@ -2111,7 +1879,6 @@ class Display {
     if (
       tabName === "clip" ||
       tabName === "tree" ||
-      tabName === "zebra" ||
       tabName === "material" ||
       tabName === "studio"
     ) {
@@ -2123,16 +1890,13 @@ class Display {
    * Switch to a tab (internal, called by activeTab subscription).
    */
   private switchToTab(newTab: ActiveTab, oldTab?: ActiveTab): void {
-    if (!["clip", "tree", "zebra", "material", "studio"].includes(newTab)) {
+    if (!["clip", "tree", "material", "studio"].includes(newTab)) {
       return;
     }
 
     // --- Leave the OLD mode FIRST (before _updateVisibility runs) ---
     // This ensures all state (clipping, materials, etc.) is restored
     // before the new tab's controls are activated.
-    if (oldTab === "zebra" && newTab !== "zebra") {
-      this.viewer.enableZebraTool(false);
-    }
     if (oldTab === "studio" && newTab !== "studio") {
       this.closeMatEditor();
       this._saveMatEditorChanges();
@@ -2146,7 +1910,6 @@ class Display {
     const _updateVisibility = (
       showTree: boolean,
       showClip: boolean,
-      showZebra: boolean,
       showMaterial: boolean,
       showStudio: boolean,
     ) => {
@@ -2154,8 +1917,6 @@ class Display {
       this.cadTreeToggles.style.display = showTree ? "block" : "none";
       this.cadClipToggles.style.display = showClip ? "block" : "none";
       this.cadClip.style.display = showClip ? "block" : "none";
-      this.cadZebraToggles.style.display = showZebra ? "block" : "none";
-      this.cadZebra.style.display = showZebra ? "block" : "none";
       this.cadMaterialToggles.style.display = showMaterial ? "block" : "none";
       this.cadMaterial.style.display = showMaterial ? "block" : "none";
       this.cadStudioToggles.style.display = showStudio ? "block" : "none";
@@ -2166,19 +1927,17 @@ class Display {
       if (!showClip) {
         this.viewer.setClipPlaneHelpers(false);
       }
-      // NOTE: zebra and studio leave calls removed from here --
-      // they now run above, before _updateVisibility is called.
     };
 
     if (newTab === "tree") {
-      _updateVisibility(true, false, false, false, false);
+      _updateVisibility(true, false, false, false);
       this.viewer.nestedGroup.setBackVisible(false);
       // Lazy-rendered tree nodes may be stale if the tree was rebuilt
       // while this tab was hidden (display:none → getBoundingClientRect
       // returns zero, so update() rendered nothing).  Kick it now.
       this.viewer.treeview?.update();
     } else if (newTab === "clip") {
-      _updateVisibility(false, true, false, false, false);
+      _updateVisibility(false, true, false, false);
       this.viewer.nestedGroup.setBackVisible(true);
       const clipIntersection = this.viewer.state.get("clipIntersection");
       if (typeof clipIntersection === "boolean") {
@@ -2186,14 +1945,11 @@ class Display {
       }
       this.viewer.setClipPlaneHelpers(this.lastPlaneState);
       this.viewer.update(true, false);
-    } else if (newTab === "zebra") {
-      _updateVisibility(false, false, true, false, false);
-      this.viewer.enableZebraTool(true);
     } else if (newTab === "material") {
-      _updateVisibility(false, false, false, true, false);
+      _updateVisibility(false, false, true, false);
       this.viewer.nestedGroup.setBackVisible(false);
     } else if (newTab === "studio") {
-      _updateVisibility(false, false, false, false, true);
+      _updateVisibility(false, false, false, true);
       this.viewer.nestedGroup.setBackVisible(false);
 
       // Disable any active tool before entering Studio mode
@@ -2212,7 +1968,6 @@ class Display {
     [
       this.tabTree,
       this.tabClip,
-      this.tabZebra,
       this.tabMaterial,
       this.tabStudio,
     ].forEach((tabEl) => {
@@ -2227,9 +1982,6 @@ class Display {
     } else if (newTab === "clip") {
       this.tabClip.classList.add("tcv_tab-selected");
       this.tabClip.classList.remove("tcv_tab-unselected");
-    } else if (newTab === "zebra") {
-      this.tabZebra.classList.add("tcv_tab-selected");
-      this.tabZebra.classList.remove("tcv_tab-unselected");
     } else if (newTab === "material") {
       this.tabMaterial.classList.add("tcv_tab-selected");
       this.tabMaterial.classList.remove("tcv_tab-unselected");
@@ -2325,13 +2077,6 @@ class Display {
    */
   handleMaterialReset = (_e: Event): void => {
     this.viewer.resetMaterial();
-  };
-
-  /**
-   * Reset zebra tool to default settings
-   */
-  handleZebraReset = (_e: Event): void => {
-    this.viewer.resetZebra();
   };
 
   // ---------------------------------------------------------------------------
@@ -2896,80 +2641,7 @@ class Display {
   }
 
   // ---------------------------------------------------------------------------
-  // Zebra Tool Handlers
-  // ---------------------------------------------------------------------------
-
-  /**
-   * Set zebra stripe count in the UI
-   */
-  setZebraCount = (val: number): void => {
-    this.zebraCountSlider!.setValue(val);
-  };
-
-  /**
-   * Set zebra stripe opacity in the UI
-   */
-  setZebraOpacity = (val: number): void => {
-    this.zebraOpacitySlider!.setValue(val);
-  };
-
-  /**
-   * Set zebra stripe direction in the UI
-   */
-  setZebraDirection = (val: number): void => {
-    this.zebraDirectionSlider!.setValue(val);
-  };
-
-  /**
-   * Handler for setting the zebra color scheme
-   */
-  setZebraColorScheme = (e: Event): void => {
-    if (!(e.target instanceof HTMLInputElement)) return;
-    const value = e.target.value;
-    if (
-      value === "blackwhite" ||
-      value === "colorful" ||
-      value === "grayscale"
-    ) {
-      this.viewer.setZebraColorScheme(value);
-      this.setZebraColorSchemeSelect(value);
-    }
-  };
-
-  /**
-   * Set zebra color scheme radio button in the UI
-   */
-  setZebraColorSchemeSelect = (value: string): void => {
-    const el = this.container.querySelector(
-      `input[name="zebra_color_group"][value="${value}"]`,
-    );
-    if (el instanceof HTMLInputElement) el.checked = true;
-  };
-
-  /**
-   * Handler for setting the zebra mapping mode
-   */
-  setZebraMappingMode = (e: Event): void => {
-    if (!(e.target instanceof HTMLInputElement)) return;
-    const value = e.target.value;
-    if (value === "reflection" || value === "normal") {
-      this.viewer.setZebraMappingMode(value);
-      this.setZebraMappingModeSelect(value);
-    }
-  };
-
-  /**
-   * Set zebra mapping mode radio button in the UI
-   */
-  setZebraMappingModeSelect = (value: string): void => {
-    const el = this.container.querySelector(
-      `input[name="zebra_mapping_group"][value="${value}"]`,
-    );
-    if (el instanceof HTMLInputElement) el.checked = true;
-  };
-
-  // ---------------------------------------------------------------------------
-  // Slider & Animation Control
+  // Slider Control
   // ---------------------------------------------------------------------------
 
   /**
@@ -3014,19 +2686,6 @@ class Display {
     );
     this.metalnessSlider?.setValueFromState(state.get("metalness") * 100);
     this.roughnessSlider?.setValueFromState(state.get("roughness") * 100);
-  }
-
-  /**
-   * Sync zebra slider UI from current state values.
-   * Called from updateUI after viewer options are applied to state.
-   */
-  syncZebraSlidersFromState(): void {
-    const state = this.viewer.state;
-    this.zebraCountSlider?.setValueFromState(state.get("zebraCount"));
-    this.zebraOpacitySlider?.setValueFromState(state.get("zebraOpacity"));
-    this.zebraDirectionSlider?.setValueFromState(state.get("zebraDirection"));
-    this.setZebraColorSchemeSelect(state.get("zebraColorScheme"));
-    this.setZebraMappingModeSelect(state.get("zebraMappingMode"));
   }
 
   /**
@@ -3139,46 +2798,6 @@ class Display {
     this.viewer.refreshPlane(index, parseFloat(value));
   };
 
-  /**
-   * Handle animation control by button name
-   */
-  controlAnimationByName(btn: string): void {
-    this.viewer.controlAnimation(btn);
-
-    const currentTime = this.viewer.animation.getRelativeTime();
-    this.viewer.state.set("animationSliderValue", 1000 * currentTime);
-    if (btn == "play") {
-      this.viewer.bboxNeedsUpdate = true;
-    } else if (btn == "stop") {
-      this.viewer.bboxNeedsUpdate = false;
-      if (this.viewer.lastBbox != null) {
-        this.viewer.lastBbox.needsUpdate = true;
-      }
-    } else {
-      this.viewer.bboxNeedsUpdate = !this.viewer.bboxNeedsUpdate;
-    }
-  }
-
-  /**
-   * Handler for the animation control buttons
-   */
-  controlAnimation = (e: Event): void => {
-    if (!(e.target instanceof HTMLElement)) return;
-    const btn = e.target.className.split(" ")[0].slice(4);
-    this.controlAnimationByName(btn);
-  };
-
-  /**
-   * Handler for the animation slider
-   */
-  animationChange = (e: Event): void => {
-    if (!(e.target instanceof HTMLInputElement)) return;
-    this.viewer.setRelativeTime(e.target.valueAsNumber / 1000);
-    if (this.viewer.lastBbox != null) {
-      this.viewer.lastBbox.needsUpdate = true;
-    }
-  };
-
   // ---------------------------------------------------------------------------
   // Keyboard Shortcuts
   // ---------------------------------------------------------------------------
@@ -3199,6 +2818,15 @@ class Display {
         this.closeMatEditor();
         return;
       }
+      if (this.help_shown) {
+        e.preventDefault();
+        this.showHelp(false);
+        this.container.focus();
+        return;
+      }
+      this.viewer.clearPanelSelection();
+      if (!this.state.get("activeTool")) e.preventDefault();
+      return;
     }
 
     const action = KeyMapper.getActionForEvent(e);
@@ -3230,8 +2858,6 @@ class Display {
       "perspective",
       "transparent",
       "blackedges",
-      "explode",
-      "zscale",
       "distance",
       "properties",
       "select",
@@ -3280,37 +2906,8 @@ class Display {
       case "help":
         this.toggleHelp();
         return;
-      case "play": {
-        const mode = this.state.get("animationMode");
-        if (mode === "animation" || mode === "explode") {
-          const clipAction = this.viewer.clipAction;
-          if (clipAction && clipAction.isRunning()) {
-            this.controlAnimationByName("pause");
-          } else {
-            this.controlAnimationByName("play");
-          }
-        }
-        return;
-      }
-      case "stop": {
-        if (this.help_shown) {
-          this.showHelp(false);
-          this.container.focus();
-          return;
-        }
-        this.viewer.clearPanelSelection();
-        // When a tool is active, let ESC propagate to the raycaster
-        // for shape deselection
-        if (this.state.get("activeTool")) return "propagate";
-        const stopMode = this.state.get("animationMode");
-        if (stopMode === "explode" || stopMode === "animation") {
-          this.controlAnimationByName("stop");
-        }
-        return;
-      }
       case "tree":
       case "clip":
-      case "zebra":
       case "material":
       case "studio":
         this.viewer.setActiveTab(action);
@@ -3359,7 +2956,6 @@ class Display {
     > = {
       tree: { el: this.tabTree, label: "Navigation Tree" },
       clip: { el: this.tabClip, label: "Clipping Tool" },
-      zebra: { el: this.tabZebra, label: "Zebra Tool" },
       material: { el: this.tabMaterial, label: "Material Selection" },
       studio: { el: this.tabStudio, label: "Studio Mode" },
     };
@@ -3438,7 +3034,7 @@ class Display {
 
   /**
    * Show or hide tools panel (tabs + content) in glass mode.
-   * Also toggles the orientation marker and animation/explode slider.
+   * Also toggles the orientation marker.
    */
   showToolsPanel = (flag: boolean): void => {
     const cadTree = this.getElement("tcv_cad_tree");
@@ -3452,13 +3048,6 @@ class Display {
       this.viewer.update(true, false);
     }
 
-    // Toggle animation/explode slider (only if it was visible before hiding)
-    if (!flag) {
-      this._animWasVisible = this.cadAnim.style.display !== "none";
-      this.cadAnim.style.display = "none";
-    } else if (this._animWasVisible) {
-      this.cadAnim.style.display = "block";
-    }
   };
 
   /**

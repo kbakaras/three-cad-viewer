@@ -881,8 +881,6 @@ describe("NestedGroup - renderPolygons", () => {
     );
 
     expect(group).toBeDefined();
-    expect(group.minZ).toBe(0);
-    expect(group.height).toBe(10);
     expect(ng.groups["poly/path"]).toBe(group);
   });
 
@@ -923,7 +921,6 @@ describe("NestedGroup - renderPolygons", () => {
     );
 
     expect(group).toBeDefined();
-    expect(group.height).toBe(5);
   });
 });
 
@@ -1305,54 +1302,6 @@ describe("NestedGroup - setPolygonOffset", () => {
   });
 });
 
-describe("NestedGroup - setZScale", () => {
-  test("sets z scale on all groups", () => {
-    const shapes = createPolygonShape();
-    const ng = new NestedGroup(
-      shapes,
-      800,
-      600,
-      0x707070,
-      false,
-      0.5,
-      0.3,
-      0.65,
-      0,
-      100,
-    );
-    ng.render();
-
-    // Should not throw
-    expect(() => ng.setZScale(2.0)).not.toThrow();
-  });
-});
-
-describe("NestedGroup - setMinZ", () => {
-  test("calls setMinZ on groups (no-op for groups without the method)", () => {
-    const shapes = createShapeWithMesh();
-    const ng = new NestedGroup(
-      shapes,
-      800,
-      600,
-      0x707070,
-      false,
-      0.5,
-      0.3,
-      0.65,
-      0,
-      100,
-    );
-    ng.render();
-
-    // setMinZ traverses groups but ObjectGroup doesn't have a setMinZ method
-    // This is a no-op for most object types, but we test the traversal path
-    // Note: The current implementation will throw for ObjectGroup since it
-    // doesn't have this method. This appears to be dead/incomplete code.
-    // For now, we just verify the method exists on NestedGroup
-    expect(typeof ng.setMinZ).toBe("function");
-  });
-});
-
 describe("NestedGroup - updateMaterials", () => {
   test("updates materials on all groups", () => {
     const shapes = createShapeWithMesh();
@@ -1372,55 +1321,6 @@ describe("NestedGroup - updateMaterials", () => {
 
     // Should not throw
     expect(() => ng.updateMaterials()).not.toThrow();
-  });
-});
-
-describe("NestedGroup - Zebra methods", () => {
-  let ng;
-
-  beforeEach(() => {
-    const shapes = createShapeWithMesh();
-    ng = new NestedGroup(
-      shapes,
-      800,
-      600,
-      0x707070,
-      false,
-      0.5,
-      0.3,
-      0.65,
-      0,
-      100,
-    );
-    ng.render();
-  });
-
-  test("setZebra enables/disables zebra", () => {
-    expect(() => ng.setZebra(true)).not.toThrow();
-    expect(() => ng.setZebra(false)).not.toThrow();
-  });
-
-  test("setZebraCount sets stripe count", () => {
-    expect(() => ng.setZebraCount(10)).not.toThrow();
-  });
-
-  test("setZebraOpacity sets stripe opacity", () => {
-    expect(() => ng.setZebraOpacity(0.5)).not.toThrow();
-  });
-
-  test("setZebraDirection sets stripe direction", () => {
-    expect(() => ng.setZebraDirection(45)).not.toThrow();
-  });
-
-  test("setZebraColorScheme sets color scheme", () => {
-    expect(() => ng.setZebraColorScheme("blackwhite")).not.toThrow();
-    expect(() => ng.setZebraColorScheme("colorful")).not.toThrow();
-    expect(() => ng.setZebraColorScheme("grayscale")).not.toThrow();
-  });
-
-  test("setZebraMappingMode sets mapping mode", () => {
-    expect(() => ng.setZebraMappingMode("reflection")).not.toThrow();
-    expect(() => ng.setZebraMappingMode("normal")).not.toThrow();
   });
 });
 

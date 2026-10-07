@@ -99,9 +99,7 @@ describe("Display - Constructor & Initialization", () => {
     expect(display.cadTree).toBeDefined();
     expect(display.cadClip).toBeDefined();
     expect(display.cadMaterial).toBeDefined();
-    expect(display.cadZebra).toBeDefined();
     expect(display.cadInfo).toBeDefined();
-    expect(display.cadAnim).toBeDefined();
     expect(display.cadHelp).toBeDefined();
   });
 
@@ -142,14 +140,12 @@ describe("Display - Constructor & Initialization", () => {
       ...getDisplayOptions(),
       measureTools: true,
       selectTool: true,
-      explodeTool: true,
     };
     display = new Display(container, options);
 
     expect(display.clickButtons["distance"]).toBeDefined();
     expect(display.clickButtons["properties"]).toBeDefined();
     expect(display.clickButtons["select"]).toBeDefined();
-    expect(display.clickButtons["explode"]).toBeDefined();
   });
 
   test("creates help and pin buttons", () => {
@@ -169,16 +165,8 @@ describe("Display - Constructor & Initialization", () => {
     expect(display.cadTree.style.display).toBe("block");
     expect(display.cadClip.style.display).toBe("none");
     expect(display.cadMaterial.style.display).toBe("none");
-    expect(display.cadZebra.style.display).toBe("none");
   });
 
-  test("hides zebra tab when zebraTool is false", () => {
-    container = createContainer();
-    const options = { ...getDisplayOptions(), zebraTool: false };
-    display = new Display(container, options);
-
-    expect(display.tabZebra.style.display).toBe("none");
-  });
 
   test("stores feature flags", () => {
     container = createContainer();
@@ -187,8 +175,6 @@ describe("Display - Constructor & Initialization", () => {
 
     expect(display.measureTools).toBe(true);
     expect(display.selectTool).toBe(true);
-    expect(display.explodeTool).toBe(true);
-    expect(display.zscaleTool).toBe(true);
   });
 
   test("stores theme", () => {
@@ -417,18 +403,6 @@ describe("Display - Show/Hide Methods", () => {
     expect(spy).toHaveBeenCalledWith(true);
   });
 
-  test("showExplodeTool shows/hides explode button", () => {
-    container = createContainer();
-    display = new Display(container, getDisplayOptions());
-
-    const spy = vi.spyOn(display.clickButtons["explode"], "show");
-
-    display.showExplodeTool(false);
-    expect(spy).toHaveBeenCalledWith(false);
-
-    display.showExplodeTool(true);
-    expect(spy).toHaveBeenCalledWith(true);
-  });
 
   test("showPinning shows/hides pin button", () => {
     container = createContainer();
@@ -443,37 +417,7 @@ describe("Display - Show/Hide Methods", () => {
     expect(spy).toHaveBeenCalledWith(true);
   });
 
-  test("showExplode shows/hides explode widget", () => {
-    container = createContainer();
-    display = new Display(container, getDisplayOptions());
 
-    const el =
-      display.container.getElementsByClassName("tcv_explode_widget")[0];
-    // Element may not exist in minimal test DOM
-    if (el) {
-      display.showExplode(true);
-      expect(el.style.display).toBe("inline-block");
-
-      display.showExplode(false);
-      expect(el.style.display).toBe("none");
-    } else {
-      // Element not present in test DOM - this is expected for some configurations
-      // The method tries to access el.style which would throw, so skip
-      expect(el).toBeUndefined();
-    }
-  });
-
-  test("showZScale shows/hides zscale slider", () => {
-    container = createContainer();
-    display = new Display(container, getDisplayOptions());
-
-    display.showZScale(true);
-    const el = display.container.getElementsByClassName("tcv_cad_zscale")[0];
-    expect(el.style.display).toBe("inline-block");
-
-    display.showZScale(false);
-    expect(el.style.display).toBe("none");
-  });
 });
 
 describe("Display - Clipping UI", () => {
@@ -639,18 +583,17 @@ describe("Display - With Viewer Integration", () => {
     // With all features enabled
     viewer.state.set("pinning", true);
     viewer.state.set("selectTool", true);
-    viewer.state.set("explodeTool", true);
 
     const threshold = display._widthThreshold();
-    expect(threshold).toBe(770);
+    expect(threshold).toBe(740);
 
     // With pinning disabled
     viewer.state.set("pinning", false);
-    expect(display._widthThreshold()).toBe(740);
+    expect(display._widthThreshold()).toBe(710);
 
     // With selectTool disabled too
     viewer.state.set("selectTool", false);
-    expect(display._widthThreshold()).toBe(710);
+    expect(display._widthThreshold()).toBe(680);
   });
 
   test("updateToolbarCollapse maximizes when width sufficient", () => {
@@ -732,27 +675,6 @@ describe("Display - State Subscriptions", () => {
     expect(spy).toHaveBeenCalledWith(false);
   });
 
-  test("subscribes to animationMode state changes", () => {
-    testContext = setupViewer();
-    const { viewer, display } = testContext;
-
-    viewer.state.set("animationMode", "explode");
-    expect(display.cadAnim.style.display).toBe("block");
-    expect(
-      display.container.getElementsByClassName("tcv_animation_label")[0]
-        .innerHTML,
-    ).toBe("E");
-
-    viewer.state.set("animationMode", "animation");
-    expect(display.cadAnim.style.display).toBe("block");
-    expect(
-      display.container.getElementsByClassName("tcv_animation_label")[0]
-        .innerHTML,
-    ).toBe("A");
-
-    viewer.state.set("animationMode", "none");
-    expect(display.cadAnim.style.display).toBe("none");
-  });
 
   test("subscribes to clipPlaneHelpers state changes", () => {
     testContext = setupViewer();
@@ -892,7 +814,6 @@ describe("Display - Tab Navigation", () => {
     expect(display.cadTree.style.display).toBe("block");
     expect(display.cadClip.style.display).toBe("none");
     expect(display.cadMaterial.style.display).toBe("none");
-    expect(display.cadZebra.style.display).toBe("none");
   });
 
   test("switching to clip tab shows correct containers", () => {
@@ -915,7 +836,6 @@ describe("Display - Tab Navigation", () => {
     expect(display.cadTree.style.display).toBe("none");
     expect(display.cadClip.style.display).toBe("block");
     expect(display.cadMaterial.style.display).toBe("none");
-    expect(display.cadZebra.style.display).toBe("none");
   });
 
   test("switching to material tab shows correct containers", () => {
@@ -936,30 +856,8 @@ describe("Display - Tab Navigation", () => {
     expect(display.cadTree.style.display).toBe("none");
     expect(display.cadClip.style.display).toBe("none");
     expect(display.cadMaterial.style.display).toBe("block");
-    expect(display.cadZebra.style.display).toBe("none");
   });
 
-  test("switching to zebra tab shows correct containers", () => {
-    testContext = setupViewer();
-    const { viewer, display } = testContext;
-
-    // Mock dependencies
-    viewer._rendered = {
-      clipping: { setVisible: vi.fn() },
-      nestedGroup: { setBackVisible: vi.fn() },
-    };
-    viewer.setLocalClipping = vi.fn();
-    viewer.setClipPlaneHelpers = vi.fn();
-    viewer.enableZebraTool = vi.fn();
-    viewer.checkChanges = vi.fn();
-
-    viewer.setActiveTab("zebra");
-
-    expect(display.cadTree.style.display).toBe("none");
-    expect(display.cadClip.style.display).toBe("none");
-    expect(display.cadMaterial.style.display).toBe("none");
-    expect(display.cadZebra.style.display).toBe("block");
-  });
 
   test("switching tabs updates tab styling", () => {
     testContext = setupViewer();
@@ -1197,16 +1095,6 @@ describe("Display - Toolbar Handlers", () => {
     expect(viewer.pinAsPng).toHaveBeenCalled();
   });
 
-  test("setExplode calls viewer.setExplode", () => {
-    testContext = setupViewer();
-    const { viewer, display } = testContext;
-
-    // Mock to avoid controls/animation dependency
-    viewer.setExplode = vi.fn();
-
-    display.setExplode("explode", true);
-    expect(viewer.setExplode).toHaveBeenCalledWith(true);
-  });
 });
 
 describe("Display - Clipping Handlers", () => {
@@ -1306,166 +1194,7 @@ describe("Display - Material Handlers", () => {
   });
 });
 
-describe("Display - Zebra Handlers", () => {
-  let testContext;
 
-  afterEach(() => {
-    if (testContext) {
-      cleanup(testContext);
-      testContext = null;
-    }
-  });
-
-  test("setZebraCount calls slider setValue", () => {
-    testContext = setupViewer();
-    const { display } = testContext;
-
-    const spy = vi.spyOn(display.zebraCountSlider, "setValue");
-
-    display.setZebraCount(25);
-    expect(spy).toHaveBeenCalledWith(25);
-  });
-
-  test("setZebraOpacity calls slider setValue", () => {
-    testContext = setupViewer();
-    const { display } = testContext;
-
-    const spy = vi.spyOn(display.zebraOpacitySlider, "setValue");
-
-    display.setZebraOpacity(0.5);
-    expect(spy).toHaveBeenCalledWith(0.5);
-  });
-
-  test("setZebraDirection calls slider setValue", () => {
-    testContext = setupViewer();
-    const { display } = testContext;
-
-    const spy = vi.spyOn(display.zebraDirectionSlider, "setValue");
-
-    display.setZebraDirection(45);
-    expect(spy).toHaveBeenCalledWith(45);
-  });
-
-  test("setZebraColorScheme calls viewer and updates UI", () => {
-    testContext = setupViewer();
-    const { viewer, display } = testContext;
-
-    // Mock to avoid nestedGroup dependency
-    viewer.setZebraColorScheme = vi.fn();
-
-    display.setZebraColorScheme(createInputEvent("colorful"));
-
-    expect(viewer.setZebraColorScheme).toHaveBeenCalledWith("colorful");
-  });
-
-  test("setZebraColorSchemeSelect updates radio button", () => {
-    testContext = setupViewer();
-    const { display, container } = testContext;
-
-    display.setZebraColorSchemeSelect("colorful");
-
-    const el = container.querySelector(
-      'input[name="zebra_color_group"][value="colorful"]',
-    );
-    expect(el?.checked).toBe(true);
-  });
-
-  test("setZebraMappingMode calls viewer and updates UI", () => {
-    testContext = setupViewer();
-    const { viewer, display } = testContext;
-
-    // Mock to avoid nestedGroup dependency
-    viewer.setZebraMappingMode = vi.fn();
-
-    display.setZebraMappingMode(createInputEvent("normal"));
-
-    expect(viewer.setZebraMappingMode).toHaveBeenCalledWith("normal");
-  });
-
-  test("setZebraMappingModeSelect updates radio button", () => {
-    testContext = setupViewer();
-    const { display, container } = testContext;
-
-    display.setZebraMappingModeSelect("normal");
-
-    const el = container.querySelector(
-      'input[name="zebra_mapping_group"][value="normal"]',
-    );
-    expect(el?.checked).toBe(true);
-  });
-});
-
-describe("Display - Animation Controls", () => {
-  let testContext;
-
-  afterEach(() => {
-    if (testContext) {
-      cleanup(testContext);
-      testContext = null;
-    }
-  });
-
-  test("controlAnimationByName calls viewer.controlAnimation", () => {
-    testContext = setupViewer();
-    const { viewer, display } = testContext;
-
-    // Mock animation and controlAnimation to avoid clipAction dependency
-    viewer.animation = {
-      getRelativeTime: vi.fn().mockReturnValue(0.5),
-    };
-    viewer.controlAnimation = vi.fn();
-
-    display.controlAnimationByName("play");
-
-    expect(viewer.controlAnimation).toHaveBeenCalledWith("play");
-    expect(viewer.bboxNeedsUpdate).toBe(true);
-  });
-
-  test("controlAnimationByName handles stop", () => {
-    testContext = setupViewer();
-    const { viewer, display } = testContext;
-
-    viewer.animation = {
-      getRelativeTime: vi.fn().mockReturnValue(0.5),
-    };
-    viewer.lastBbox = { needsUpdate: false };
-    viewer.controlAnimation = vi.fn();
-
-    display.controlAnimationByName("stop");
-
-    expect(viewer.bboxNeedsUpdate).toBe(false);
-    expect(viewer.lastBbox.needsUpdate).toBe(true);
-  });
-
-  test("controlAnimation extracts button name from event", () => {
-    testContext = setupViewer();
-    const { viewer, display } = testContext;
-
-    viewer.animation = {
-      getRelativeTime: vi.fn().mockReturnValue(0.5),
-    };
-    viewer.controlAnimation = vi.fn();
-
-    display.controlAnimation(createElementEvent("tcv_pause some-other-class"));
-
-    expect(viewer.controlAnimation).toHaveBeenCalledWith("pause");
-  });
-
-  test("animationChange sets relative time", () => {
-    testContext = setupViewer();
-    const { viewer, display } = testContext;
-
-    viewer.animation = {
-      setRelativeTime: vi.fn(),
-    };
-    viewer.lastBbox = { needsUpdate: false };
-
-    display.animationChange(createInputEvent("500", 500));
-
-    expect(viewer.animation.setRelativeTime).toHaveBeenCalledWith(0.5);
-    expect(viewer.lastBbox.needsUpdate).toBe(true);
-  });
-});
 
 describe("Display - Info Panel Methods", () => {
   let testContext;
@@ -1516,8 +1245,8 @@ describe("Display - Info Panel Methods", () => {
 
     const spy = vi.spyOn(display._info, "readyMsg");
 
-    display.showReadyMessage("1.0.0", "orbit");
-    expect(spy).toHaveBeenCalledWith("1.0.0", "orbit");
+    display.showReadyMessage("1.0.0");
+    expect(spy).toHaveBeenCalledWith("1.0.0");
   });
 
   test("showCenterInfo delegates to info object", () => {

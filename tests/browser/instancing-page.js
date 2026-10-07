@@ -23,8 +23,6 @@ const displayOptions = {
   newTreeBehavior: true,
   measureTools: true,
   selectTool: true,
-  explodeTool: true,
-  zebraTool: true,
   studioTool: true,
 };
 const viewer = new Viewer(

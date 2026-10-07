@@ -6,7 +6,6 @@ import { KeyMapper } from "../utils/utils.js";
 interface ToolbarFeatures {
   measureTools: boolean;
   selectTool: boolean;
-  explodeTool: boolean;
 }
 
 /**
@@ -110,8 +109,7 @@ class Toolbar {
           !flag &&
           ((button.name === "distance" && !this.features.measureTools) ||
             (button.name === "properties" && !this.features.measureTools) ||
-            (button.name === "select" && !this.features.selectTool) ||
-            (button.name === "explode" && !this.features.explodeTool))
+            (button.name === "select" && !this.features.selectTool))
         ) {
           continue;
         }

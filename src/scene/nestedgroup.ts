@@ -8,8 +8,6 @@ import { MaterialFactory } from "../rendering/material-factory.js";
 import { deepDispose, flatten } from "../utils/utils.js";
 import { gpuTracker } from "../utils/gpu-tracker.js";
 import type {
-  ZebraColorScheme,
-  ZebraMappingMode,
   StudioTextureMapping,
   Shapes,
   ColorValue,
@@ -777,7 +775,7 @@ class NestedGroup {
    */
   renderPolygons(
     shape: PolygonShape,
-    minZ: number,
+    _minZ: number,
     color: ColorValue,
     alpha: number,
     renderback: boolean,
@@ -797,8 +795,6 @@ class NestedGroup {
       renderback,
     );
     group.name = path.replaceAll("/", this.delim);
-    group.minZ = minZ;
-    group.height = shape.height;
 
     this.groups[path] = group;
 
@@ -1158,66 +1154,10 @@ class NestedGroup {
   }
 
   /**
-   * Set Z-axis scale for all shapes (used for GDS extrusion visualization).
-   */
-  setZScale(value: number): void {
-    this._traverse("setZScale", value);
-  }
-
-  /**
-   * Reset minimum Z position for all shapes.
-   */
-  setMinZ(): void {
-    this._traverse("setMinZ");
-  }
-
-  /**
    * Mark all materials as needing update.
    */
   updateMaterials(): void {
     this._traverse("updateMaterials", true);
-  }
-
-  /**
-   * Enable or disable zebra stripe visualization.
-   */
-  setZebra(flag: boolean): void {
-    this._traverse("setZebra", flag);
-  }
-
-  /**
-   * Set the number of zebra stripes.
-   */
-  setZebraCount(value: number): void {
-    this._traverse("setZebraCount", value);
-  }
-
-  /**
-   * Set the opacity of zebra stripes.
-   */
-  setZebraOpacity(value: number): void {
-    this._traverse("setZebraOpacity", value);
-  }
-
-  /**
-   * Set the direction/angle of zebra stripes.
-   */
-  setZebraDirection(value: number): void {
-    this._traverse("setZebraDirection", value);
-  }
-
-  /**
-   * Set the color scheme for zebra stripes.
-   */
-  setZebraColorScheme(flag: ZebraColorScheme): void {
-    this._traverse("setZebraColorScheme", flag);
-  }
-
-  /**
-   * Set the mapping mode for zebra stripes.
-   */
-  setZebraMappingMode(flag: ZebraMappingMode): void {
-    this._traverse("setZebraMappingMode", flag);
   }
 
   // ===========================================================================
