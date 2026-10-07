@@ -812,6 +812,7 @@ export type VisibilityState = [VisibilityValue, VisibilityValue];
 export interface Shapes {
   /** Независимые слои сцены: идентификатор -> отображаемое название. */
   layers?: Record<string, string> | undefined;
+  layer_defaults?: Record<string, boolean> | undefined;
   /** Слой узла, наследуемый всеми его потомками. */
   layer?: string | undefined;
   /** Показ разрешён, если виден хотя бы один из указанных узлов. */

@@ -4315,6 +4315,7 @@ class Viewer {
     Object.assign(entry, data);
     entry.layer = data.layer;
     entry.layers = data.layers;
+    entry.layer_defaults = data.layer_defaults;
     entry.visible_if_any = data.visible_if_any;
     entry.visibility_owner = data.visibility_owner;
     entry.tree_leaf = data.tree_leaf;

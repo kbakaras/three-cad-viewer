@@ -17,6 +17,7 @@ interface Leaf {
 export class SceneLayers {
   private choices = new Map<string, boolean>();
   private names: Record<string, string> = {};
+  private defaults: Record<string, boolean> = {};
   private leaves = new Map<string, Leaf>();
   private owners = new Set<string>();
   private terminals = new Set<string>();
@@ -32,6 +33,7 @@ export class SceneLayers {
 
   setScene(tree: Shapes | null): void {
     this.names = tree?.layers ?? {};
+    this.defaults = tree?.layer_defaults ?? {};
     this.leaves.clear();
     this.owners.clear();
     this.terminals.clear();
@@ -190,7 +192,7 @@ export class SceneLayers {
     return Object.fromEntries(
       Object.entries(this.names).map(([id, name]) => [
         id,
-        { name, visible: this.choices.get(id) ?? true },
+        { name, visible: this.choices.get(id) ?? this.defaults[id] ?? true },
       ]),
     );
   }
@@ -206,7 +208,7 @@ export class SceneLayers {
     const entries: [ObjectGroup, Leaf][] = [];
     const subjects = new Set<string>();
     const enabled = (leaf: Leaf): boolean =>
-      leaf.layers.every((id) => this.choices.get(id) !== false) &&
+      leaf.layers.every((id) => (this.choices.get(id) ?? this.defaults[id] ?? true)) &&
       (!leaf.selectionRoot || !this.hiddenPanels.has(leaf.selectionRoot));
 
     for (const [path, value] of Object.entries(groups)) {

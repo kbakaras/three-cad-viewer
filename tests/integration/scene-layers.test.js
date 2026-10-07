@@ -23,6 +23,21 @@ describe("Слои модели", () => {
   }
   const visible = (v, id) => v.nestedGroup.groups[id].getVisibility();
 
+  test("слой можно скрыть при первой загрузке, затем выбор сохраняется", () => {
+    ctx = setupViewer();
+    const shapes = makeLayeredFurniture();
+    shapes.layer_defaults = { walls: false };
+    ctx.viewer.render(shapes, ctx.renderOptions, ctx.viewerOptions);
+    const v = ctx.viewer;
+    expect(v.getLayers().walls.visible).toBe(false);
+    expect(visible(v, "/Model/Walls/Body")).toBe(false);
+    v.setLayerVisible("walls", true);
+    expect(visible(v, "/Model/Walls/Body")).toBe(true);
+    v.clear();
+    v.render(shapes, ctx.renderOptions, ctx.viewerOptions);
+    expect(v.getLayers().walls.visible).toBe(true);
+  });
+
   test("галочка слоя не меняет дерево и скрытые панели не показывают надписи", () => {
     const v = start();
     expect(Object.values(v.getLayers()).every((layer) => layer.visible)).toBe(
